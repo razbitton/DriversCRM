@@ -11,6 +11,7 @@ import TenderTable from "@/components/tenders/TenderTable";
 import TopActionsBar from "@/components/common/TopActionsBar"; 
 import ConfirmationModal from "@/components/common/ConfirmationModal";
 import EditTenderModal from "@/components/tenders/EditTenderModal";
+import NewTripModal from "@/components/modals/NewTripModal";
 import type { Tender, Driver } from "@shared/schema";
 
 export default function Tenders() {
@@ -31,6 +32,7 @@ export default function Tenders() {
   });
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingTender, setEditingTender] = useState<Tender | null>(null);
+  const [isNewTripModalOpen, setIsNewTripModalOpen] = useState(false);
 
   // Fetch tenders and drivers
   const { data: tenders = [], isLoading, refetch } = useQuery<Tender[]>({
@@ -188,6 +190,14 @@ export default function Tenders() {
     setFilters(newFilters);
   };
 
+  const handleAddNewTrip = () => {
+    setIsNewTripModalOpen(true);
+  };
+
+  const handleTripCreated = () => {
+    refetch();
+  };
+
   if (isLoading) {
     return (
       <div className="p-8 bg-gray-50 min-h-screen">
@@ -213,6 +223,7 @@ export default function Tenders() {
           <TenderToolbar 
             onSearch={handleSearch}
             onFilter={handleFilter}
+            onAddNew={handleAddNewTrip}
             drivers={drivers}
           />
         </div>
@@ -266,12 +277,19 @@ export default function Tenders() {
                 <div className="bg-gray-100">
                     <EditTenderModal 
                         setOpen={setIsEditModalOpen} 
-                        onTenderUpdated={handleTenderUpdated}
+                        onTenderUpdated={refetch}
                         tender={editingTender}
                     />
                 </div>
             </DialogContent>
         </Dialog>
+      )}
+
+      {isNewTripModalOpen && (
+        <NewTripModal 
+          setOpen={setIsNewTripModalOpen}
+          onTripCreated={handleTripCreated}
+        />
       )}
     </div>
   );
