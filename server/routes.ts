@@ -384,19 +384,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Statistics endpoint for dashboard
   app.get("/api/stats", async (req, res) => {
     try {
-      const [activeTenders, waitingTenders, completedTenders] = await Promise.all([
-        storage.getTendersByStatus("active"),
-        storage.getTendersByStatus("waiting"),
-        storage.getTendersByStatus("completed")
-      ]);
-
-      const stats = {
-        active: activeTenders.length,
-        waiting: waitingTenders.length,
-        completed: completedTenders.length,
-        total: activeTenders.length + waitingTenders.length + completedTenders.length
-      };
-
+      const stats = await storage.getStats();
       res.json(stats);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch statistics" });
