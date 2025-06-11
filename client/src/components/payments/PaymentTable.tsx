@@ -3,14 +3,14 @@ import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Edit, Eye, Trash2, ArrowUpDown } from "lucide-react";
-import type { Payment } from '@shared/schema';
+import type { Payment, Driver } from '@shared/schema';
 
 const statusConfig = {
   pending: { 
     label: "חייב", 
     className: "bg-red-100 text-red-700" 
   },
-  completed: { 
+  paid: { 
     label: "זכאי", 
     className: "bg-green-100 text-green-700" 
   },
@@ -26,13 +26,26 @@ const statusConfig = {
 
 interface PaymentTableProps {
   payments: Payment[];
+  drivers: Driver[];
   onEdit?: (payment: Payment) => void;
   onView?: (payment: Payment) => void;
   onDelete?: (payment: Payment) => void;
 }
 
-export default function PaymentTable({ payments, onEdit, onView, onDelete }: PaymentTableProps) {
+export default function PaymentTable({ payments, drivers, onEdit, onView, onDelete }: PaymentTableProps) {
   const formatCurrency = (amount: number | string | null | undefined) => `₪ ${amount?.toLocaleString() || '0'}`;
+
+  const getDriverName = (driverId: number | null) => {
+    if (!driverId) return 'לא שויך';
+    const driver = drivers.find(d => d.id === driverId);
+    return driver?.full_name || `נהג #${driverId}`;
+  };
+
+  const getDriverPhone = (driverId: number | null) => {
+    if (!driverId) return 'לא זמין';
+    const driver = drivers.find(d => d.id === driverId);
+    return driver?.phone || 'לא זמין';
+  };
 
   return (
     <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
@@ -102,8 +115,8 @@ export default function PaymentTable({ payments, onEdit, onView, onDelete }: Pay
         <div>סכום יתרה</div>
         <div>סטטוס</div>
         <div>טלפון נהג</div>
-        <div>טלפון</div>
-        <div>עם לקוח</div>
+        <div>סוג תשלום</div>
+        <div>תיאור</div>
         <div>שם הנהג</div>
         <div className="text-left">פעולות</div>
       </div>
@@ -115,7 +128,7 @@ export default function PaymentTable({ payments, onEdit, onView, onDelete }: Pay
           return (
             <div key={payment.id} className="payment-table-row">
               <div className="font-medium">
-                {payment.payment_number}
+                {payment.payment_number || `#${payment.id}`}
               </div>
               <div className="font-semibold">
                 {formatCurrency(payment.amount)}
@@ -126,7 +139,7 @@ export default function PaymentTable({ payments, onEdit, onView, onDelete }: Pay
                 </Badge>
               </div>
               <div className="text-sm">
-                נהג #{payment.driver_id}
+                {getDriverPhone(payment.driver_id)}
               </div>
               <div className="text-sm">
                 {payment.payment_type}
@@ -135,7 +148,7 @@ export default function PaymentTable({ payments, onEdit, onView, onDelete }: Pay
                 {payment.description || 'תשלום רגיל'}
               </div>
               <div className="font-medium">
-                נהג #{payment.driver_id}
+                {getDriverName(payment.driver_id)}
               </div>
               <div className="col-actions">
                 <button 

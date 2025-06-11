@@ -1,222 +1,223 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Plus, Filter } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { CreditCard } from "lucide-react";
+
+import PaymentTabs from "@/components/payments/PaymentTabs";
+import PaymentTable from "@/components/payments/PaymentTable";
 import TopActionsBar from "@/components/common/TopActionsBar";
 import SearchInput from "@/components/common/SearchInput";
-import ConfirmationModal from "@/components/common/ConfirmationModal";
-import PaymentTable from "@/components/payments/PaymentTable";
-import PaymentTabs from "@/components/payments/PaymentTabs";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { format } from "date-fns";
-import { formatCurrency } from "@/utils";
-import type { Payment } from "@shared/schema";
-
-const paymentTypeConfig = {
-  salary: { label: "משכורת", className: "bg-blue-100 text-blue-700" },
-  commission: { label: "עמלה", className: "bg-green-100 text-green-700" },
-  bonus: { label: "בונוס", className: "bg-purple-100 text-purple-700" },
-  deduction: { label: "ניכוי", className: "bg-red-100 text-red-700" },
-};
-
-const statusConfig = {
-  pending: { label: "ממתין", className: "bg-yellow-100 text-yellow-700" },
-  paid: { label: "שולם", className: "bg-green-100 text-green-700" },
-  cancelled: { label: "בוטל", className: "bg-red-100 text-red-700" },
-};
+import type { Payment, Driver } from "@shared/schema";
 
 export default function Payments() {
-  const [activeTab, setActiveTab] = useState("all");
-  const [confirmModal, setConfirmModal] = useState<{
-    isOpen: boolean;
-    title: string;
-    message: string;
-    onConfirm: () => void;
-  }>({
-    isOpen: false,
-    title: "",
-    message: "",
-    onConfirm: () => {},
-  });
+  const [payments, setPayments] = useState<Payment[]>([]);
+  const [filteredPayments, setFilteredPayments] = useState<Payment[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('all');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const [selectedDriverForDetails, setSelectedDriverForDetails] = useState<Driver | null>(null);
 
   // Fetch payments
-  const { data: payments = [], isLoading, refetch } = useQuery<Payment[]>({
+  const { data: fetchedPayments = [], refetch: refetchPayments } = useQuery<Payment[]>({
     queryKey: ["/api/payments"],
   });
 
-  const handleRefresh = () => {
-    refetch();
-  };
+  // Fetch drivers for lookup
+  const { data: drivers = [] } = useQuery<Driver[]>({
+    queryKey: ["/api/drivers"],
+  });
 
-  const handleDeletePayment = (payment: Payment) => {
-    setConfirmModal({
-      isOpen: true,
-      title: "מחיקת תשלום",
-      message: `האם אתה בטוח שברצונך למחוק את התשלום בסך ${formatCurrency(payment.amount)}?`,
-      onConfirm: () => {
-        // TODO: Implement delete functionality
-        console.log("Deleting payment:", payment.id);
-        setConfirmModal(prev => ({ ...prev, isOpen: false }));
-      },
-    });
-  };
+  useEffect(() => {
+    loadPayments();
+  }, [fetchedPayments]);
 
-  const handleEditPayment = (payment: Payment) => {
-    console.log("Editing payment:", payment.id);
-    // TODO: Implement edit functionality
-  };
+  useEffect(() => {
+    applyFilters();
+  }, [payments, activeTab, searchTerm]);
 
-  const handleViewPayment = (payment: Payment) => {
-    console.log("Viewing payment:", payment.id);
-    // TODO: Implement view functionality
-  };
-
-  const handleSearch = (query: string) => {
-    console.log("Searching:", query);
-    // TODO: Implement search functionality
-  };
-
-  const handleAddNewPayment = () => {
-    console.log("Adding new payment");
-    // TODO: Implement add functionality
-  };
-
-  const getFilteredPayments = () => {
-    switch (activeTab) {
-      case "pending":
-        return payments.filter(p => p.status === "pending");
-      case "paid":
-        return payments.filter(p => p.status === "paid");
-      case "cancelled":
-        return payments.filter(p => p.status === "cancelled");
-      default:
-        return payments;
+  const loadPayments = async () => {
+    try {
+      setPayments(fetchedPayments);
+    } catch (error) {
+      console.error("Error loading payments:", error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const tabCounts = {
-    all: payments.length,
-    drivers: payments.filter(p => p.payment_type === "salary").length,
-    debts: payments.filter(p => p.status === "pending").length,
+  const applyFilters = () => {
+    let filtered = payments;
+
+    // Apply tab filter first
+    switch (activeTab) {
+      case 'drivers':
+        filtered = filtered.filter(p => p.payment_type === 'salary' || p.payment_type === 'commission');
+        break;
+      case 'debts':
+        filtered = filtered.filter(p => p.status === 'pending' || parseFloat(p.amount) < 0);
+        break;
+      default:
+        // all - no additional filtering
+        break;
+    }
+
+    // Apply search term
+    if (searchTerm) {
+      const lowerSearchTerm = searchTerm.toLowerCase();
+      filtered = filtered.filter(payment => {
+        const driver = drivers.find(d => d.id === payment.driver_id);
+        return (
+          driver?.full_name?.toLowerCase().includes(lowerSearchTerm) ||
+          payment.id.toString().includes(lowerSearchTerm) ||
+          driver?.phone?.includes(lowerSearchTerm)
+        );
+      });
+    }
+
+    setFilteredPayments(filtered);
+  };
+
+  const getCounts = () => {
+    return {
+      all: payments.length,
+      drivers: payments.filter(p => p.payment_type === 'salary' || p.payment_type === 'commission').length,
+      debts: payments.filter(p => p.status === 'pending' || parseFloat(p.amount) < 0).length,
+    };
+  };
+
+  const handleEditPayment = (payment: Payment) => {
+    console.log("Edit payment:", payment);
+    // Handle edit logic
+  };
+
+  const handleViewPayment = async (payment: Payment) => {
+    if (!payment.driver_id) {
+      console.error("Payment object does not have a driver_id", payment);
+      alert("לתשלום זה לא משויך נהג.");
+      return;
+    }
+    try {
+      const driver = drivers.find(d => d.id === payment.driver_id);
+      if (driver) {
+        setSelectedDriverForDetails(driver);
+        setIsDetailsModalOpen(true);
+      } else {
+        alert(`שגיאה: לא ניתן למצוא את פרטי הנהג. ייתכן שהנהג נמחק מהמערכת.`);
+      }
+    } catch (error) {
+      console.error("Error fetching driver details:", error);
+      alert("אירעה שגיאה בעת שליפת נתוני הנהג.");
+    }
+  };
+
+  const handleDeletePayment = async (payment: Payment) => {
+    const driver = drivers.find(d => d.id === payment.driver_id);
+    const driverName = driver?.full_name || `נהג #${payment.driver_id}`;
+    
+    if (window.confirm(`האם אתה בטוח שברצונך למחוק את התשלום של ${driverName}?`)) {
+      try {
+        const response = await fetch(`/api/payments/${payment.id}`, {
+          method: 'DELETE',
+        });
+        
+        if (response.ok) {
+          refetchPayments();
+        }
+      } catch (error) {
+        console.error("Error deleting payment:", error);
+      }
+    }
+  };
+
+  const handleSearch = (term: string) => {
+    setSearchTerm(term);
   };
 
   if (isLoading) {
     return (
-      <div className="page-container">
-        <TopActionsBar onRefresh={handleRefresh} />
-        <div className="loading-spinner">
-          <div className="spinner"></div>
+      <div className="p-8 bg-gray-50 min-h-screen">
+        <div className="animate-pulse">
+          <div className="h-8 bg-gray-200 rounded w-64 mb-8"></div>
+          <div className="h-64 bg-gray-200 rounded-xl"></div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="page-container">
-      <TopActionsBar onRefresh={handleRefresh} />
-      
-      <section>
-        <div className="toolbar-container">
+    <div className="p-8 bg-gray-50 min-h-screen">
+      <TopActionsBar />
+
+      <section className="payments-section">
+        <div className="flex justify-between items-center mb-5">
           <PaymentTabs 
-            activeTab={activeTab} 
-            onTabChange={setActiveTab} 
-            counts={tabCounts} 
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+            counts={getCounts()}
           />
-
-          {/* Toolbar */}
-          <div className="flex items-center gap-4">
-            <Button 
-              className="btn-primary-fleet"
-              onClick={handleAddNewPayment}
-            >
-              <Plus size={16} />
-              תשלום חדש
-            </Button>
-
-            <SearchInput onSearch={handleSearch} placeholder="חיפוש תשלומים..." />
-
-            <Button variant="outline" className="btn-outline-fleet">
-              <Filter size={16} />
-              סינון
-            </Button>
+          <div className="flex justify-end gap-5">
+            <SearchInput 
+              onSearch={handleSearch}
+              placeholder="חיפוש תשלומים..."
+            />
           </div>
         </div>
 
-        {/* Payments Table */}
-        <div className="content-card">
-          <div className="data-table">
-            <div className="table-header" style={{ gridTemplateColumns: "1fr 2fr 1fr 1.5fr 1fr 1.5fr 150px" }}>
-              <div>מספר תשלום</div>
-              <div>נהג</div>
-              <div>סוג תשלום</div>
-              <div>סכום</div>
-              <div>סטטוס</div>
-              <div>תאריך</div>
-              <div className="text-left">פעולות</div>
-            </div>
-            
-            <div>
-              {getFilteredPayments().map((payment) => {
-                const typeStyle = paymentTypeConfig[payment.payment_type as keyof typeof paymentTypeConfig] || paymentTypeConfig.salary;
-                const statusStyle = statusConfig[payment.status as keyof typeof statusConfig] || statusConfig.pending;
-                
-                return (
-                  <div key={payment.id} className="table-row" style={{ gridTemplateColumns: "1fr 2fr 1fr 1.5fr 1fr 1.5fr 150px" }}>
-                    <div className="font-medium text-blue-600">#{payment.id}</div>
-                    <div className="font-semibold">נהג #{payment.driver_id}</div>
-                    <div><Badge className={`${typeStyle.className} border`}>{typeStyle.label}</Badge></div>
-                    <div className="font-semibold">{formatCurrency(payment.amount)}</div>
-                    <div><Badge className={`${statusStyle.className} border`}>{statusStyle.label}</Badge></div>
-                    <div className="text-gray-500">
-                      {payment.payment_date ? format(new Date(payment.payment_date), "dd/MM/yyyy") : 'N/A'}
-                    </div>
-                    <div className="col-actions">
-                      <button onClick={() => handleEditPayment(payment)} className="btn-icon-action" title="עריכה">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                          <path d="m18.5 2.5 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                        </svg>
-                      </button>
-                      <button onClick={() => handleViewPayment(payment)} className="btn-icon-action" title="צפייה">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                          <circle cx="12" cy="12" r="3"/>
-                        </svg>
-                      </button>
-                      <button onClick={() => handleDeletePayment(payment)} className="btn-icon-action" title="מחיקה">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <polyline points="3,6 5,6 21,6"/>
-                          <path d="m19,6v14a2,2 0 0,1-2,2H7a2,2 0 0,1-2-2V6m3,0V4a2,2 0 0,1 2-2h4a2,2 0 0,1 2,2v2"/>
-                        </svg>
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
-              
-              {getFilteredPayments().length === 0 && (
-                <div className="empty-state">
-                  <div className="empty-state-icon">💳</div>
-                  <div className="empty-state-title">אין תשלומים להציג</div>
-                  <div className="empty-state-description">הוסף תשלום חדש כדי להתחיל</div>
-                </div>
-              )}
-            </div>
+        {filteredPayments.length === 0 ? (
+          <div className="bg-white p-12 rounded-xl border border-gray-200 text-center">
+            <CreditCard className="mx-auto mb-4 text-gray-400" size={48} />
+            <p className="text-gray-500 text-lg">
+              {searchTerm ? 
+                'לא נמצאו תשלומים התואמים לחיפוש' :
+                activeTab === 'all' ? 'אין תשלומים במערכת' : 
+                activeTab === 'drivers' ? 'אין תשלומים לנהגים' : 
+                'אין חובות או יתרות'}
+            </p>
+            <p className="text-gray-400 text-sm mt-2">
+              תשלומים חדשים יוצגו כאן
+            </p>
           </div>
-        </div>
+        ) : (
+          <PaymentTable
+            payments={filteredPayments}
+            drivers={drivers}
+            onEdit={handleEditPayment}
+            onView={handleViewPayment}
+            onDelete={handleDeletePayment}
+          />
+        )}
       </section>
 
-      {/* Confirmation Modal */}
-      <ConfirmationModal
-        isOpen={confirmModal.isOpen}
-        onClose={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
-        onConfirm={confirmModal.onConfirm}
-        title={confirmModal.title}
-        message={confirmModal.message}
-        confirmText="מחק"
-        cancelText="ביטול"
-        type="danger"
-      />
+      {isDetailsModalOpen && selectedDriverForDetails && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold">פרטי נהג - {selectedDriverForDetails.full_name}</h2>
+              <button 
+                onClick={() => setIsDetailsModalOpen(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="space-y-4">
+              <div><strong>טלפון:</strong> {selectedDriverForDetails.phone}</div>
+              <div><strong>כתובת:</strong> {selectedDriverForDetails.address || 'לא צוין'}</div>
+              <div><strong>סטטוס:</strong> {selectedDriverForDetails.status}</div>
+              <div><strong>תאריך הצטרפות:</strong> {selectedDriverForDetails.created_at ? new Date(selectedDriverForDetails.created_at).toLocaleDateString('he-IL') : 'לא צוין'}</div>
+            </div>
+            <div className="mt-6 flex justify-end">
+              <button 
+                onClick={() => setIsDetailsModalOpen(false)}
+                className="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300"
+              >
+                סגור
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
