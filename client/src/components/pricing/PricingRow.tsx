@@ -1,14 +1,15 @@
 import React from 'react';
-import { MapPin, Edit, Trash2 } from 'lucide-react';
+import { MapPin, Edit, Trash2, Eye } from 'lucide-react';
 import type { Pricing } from '@shared/schema';
 
 interface PricingRowProps {
   route: Pricing;
   onEdit?: (route: Pricing) => void;
+  onView?: (route: Pricing) => void;
   onDelete?: (route: Pricing) => void;
 }
 
-export default function PricingRow({ route, onEdit, onDelete }: PricingRowProps) {
+export default function PricingRow({ route, onEdit, onView, onDelete }: PricingRowProps) {
   const isAssignedToChannel = !!route.channel_id;
 
   const formatPrice = (price: string | null) => {
@@ -104,6 +105,13 @@ export default function PricingRow({ route, onEdit, onDelete }: PricingRowProps)
           onClick={() => onEdit?.(route)}
         >
           <Edit size={14} />
+        </button>
+        <button 
+          className="btn-icon-action" 
+          title="צפייה"
+          onClick={() => onView?.(route)}
+        >
+          <Eye size={14} />
         </button>
         <button 
           className="btn-icon-action" 

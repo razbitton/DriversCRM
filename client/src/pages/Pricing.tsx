@@ -1,190 +1,190 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from 'react';
 import { useQuery } from "@tanstack/react-query";
-import { Plus, Filter } from "lucide-react";
-import TopActionsBar from "@/components/common/TopActionsBar";
-import SearchInput from "@/components/common/SearchInput";
-import ConfirmationModal from "@/components/common/ConfirmationModal";
-import PricingFilter from "@/components/pricing/PricingFilter";
-import PricingRow from "@/components/pricing/PricingRow";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { formatCurrency } from "@/utils";
+import TopActionsBar from '@/components/common/TopActionsBar';
+import PricingFilter from '@/components/pricing/PricingFilter';
+import PricingRow from '@/components/pricing/PricingRow';
+import { Plus } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import type { Pricing } from "@shared/schema";
 
 export default function Pricing() {
-  const [confirmModal, setConfirmModal] = useState<{
-    isOpen: boolean;
-    title: string;
-    message: string;
-    onConfirm: () => void;
-  }>({
-    isOpen: false,
-    title: "",
-    message: "",
-    onConfirm: () => {},
-  });
+    const [routes, setRoutes] = useState<Pricing[]>([]);
+    const [filteredRoutes, setFilteredRoutes] = useState<Pricing[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
 
-  // Fetch pricing
-  const { data: pricing = [], isLoading, refetch } = useQuery<Pricing[]>({
-    queryKey: ["/api/pricing"],
-  });
-
-  const handleRefresh = () => {
-    refetch();
-  };
-
-  const handleDeletePricing = (pricingItem: Pricing) => {
-    setConfirmModal({
-      isOpen: true,
-      title: "מחיקת מחיר",
-      message: `האם אתה בטוח שברצונך למחוק את המחיר עבור ${pricingItem.route_name}?`,
-      onConfirm: () => {
-        // TODO: Implement delete functionality
-        console.log("Deleting pricing:", pricingItem.id);
-        setConfirmModal(prev => ({ ...prev, isOpen: false }));
-      },
+    // Fetch pricing data
+    const { data: fetchedRoutes = [], refetch } = useQuery<Pricing[]>({
+        queryKey: ["/api/pricing"],
     });
-  };
 
-  const handleEditPricing = (pricingItem: Pricing) => {
-    console.log("Editing pricing:", pricingItem.id);
-    // TODO: Implement edit functionality
-  };
+    useEffect(() => {
+        loadRoutes();
+    }, [fetchedRoutes]);
 
-  const handleViewPricing = (pricingItem: Pricing) => {
-    console.log("Viewing pricing:", pricingItem.id);
-    // TODO: Implement view functionality
-  };
+    const loadRoutes = async () => {
+        setIsLoading(true);
+        try {
+            setRoutes(fetchedRoutes);
+            setFilteredRoutes(fetchedRoutes);
+        } catch (error) {
+            console.error("Error loading price routes:", error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
-  const handleSearch = (query: string) => {
-    console.log("Searching:", query);
-    // TODO: Implement search functionality
-  };
+    const handleFilterChange = (searchTerm: string) => {
+        const lowerSearchTerm = searchTerm.toLowerCase();
+        if (!lowerSearchTerm) {
+            setFilteredRoutes(routes);
+            return;
+        }
+        const filtered = routes.filter(route => 
+            route.origin?.toLowerCase().includes(lowerSearchTerm) ||
+            route.destination?.toLowerCase().includes(lowerSearchTerm) ||
+            route.route_name?.toLowerCase().includes(lowerSearchTerm)
+        );
+        setFilteredRoutes(filtered);
+    };
 
-  const handleAddNewPricing = () => {
-    console.log("Adding new pricing");
-    // TODO: Implement add functionality
-  };
+    const handleEditPricing = (pricingItem: Pricing) => {
+        console.log("Editing pricing:", pricingItem.id);
+        // Handle edit logic
+    };
 
-  if (isLoading) {
+    const handleViewPricing = (pricingItem: Pricing) => {
+        console.log("Viewing pricing:", pricingItem.id);
+        // Handle view logic
+    };
+
+    const handleDeletePricing = async (pricingItem: Pricing) => {
+        if (window.confirm(`האם אתה בטוח שברצונך למחוק את המחיר עבור ${pricingItem.route_name}?`)) {
+            try {
+                const response = await fetch(`/api/pricing/${pricingItem.id}`, {
+                    method: 'DELETE',
+                });
+                
+                if (response.ok) {
+                    refetch();
+                }
+            } catch (error) {
+                console.error("Error deleting pricing:", error);
+            }
+        }
+    };
+
+    const handleAddNewPricing = () => {
+        console.log("Adding new pricing");
+        // Handle add logic
+    };
+
     return (
-      <div className="page-container">
-        <TopActionsBar onRefresh={handleRefresh} />
-        <div className="loading-spinner">
-          <div className="spinner"></div>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="page-container">
-      <TopActionsBar onRefresh={handleRefresh} />
-      
-      <section>
-        <div className="toolbar-container">
-          {/* Tabs Navigation */}
-          <nav className="tab-navigation">
-            <div style={{ display: 'flex', gap: '2rem' }}>
-              <button className="tab-link active">
-                מחירון כללי ({pricing.length})
-              </button>
-            </div>
-          </nav>
-
-          {/* Toolbar */}
-          <div className="flex items-center gap-4">
-            <Button 
-              className="btn-primary-fleet"
-              onClick={handleAddNewPricing}
-            >
-              <Plus size={16} />
-              מחיר חדש
-            </Button>
-
-            <SearchInput onSearch={handleSearch} placeholder="חיפוש מחירים..." />
-
-            <Button variant="outline" className="btn-outline-fleet">
-              <Filter size={16} />
-              סינון
-            </Button>
-          </div>
-        </div>
-
-        {/* Pricing Table */}
-        <div className="content-card">
-          <div className="data-table">
-            <div className="table-header" style={{ gridTemplateColumns: "2fr 2fr 1fr 1fr 1fr 1fr 1fr 150px" }}>
-              <div>שם מסלול</div>
-              <div>נתיב</div>
-              <div>סוג שירות</div>
-              <div>מחיר בסיס</div>
-              <div>מחיר לק"מ</div>
-              <div>מחיר מינימום</div>
-              <div>סטטוס</div>
-              <div className="text-left">פעולות</div>
+        <div className="p-8 bg-gray-50 min-h-screen">
+            <style>{`
+                .pricing-page-header {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    margin-bottom: 2rem;
+                }
+                .pricing-layout {
+                    display: flex;
+                    gap: 1.5rem;
+                    align-items: flex-start;
+                }
+                .pricing-content {
+                    flex: 1;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 1rem;
+                }
+                .pricing-list-header {
+                    display: grid;
+                    grid-template-columns: 2.5fr 1fr 1fr 1fr 1fr;
+                    color: #6b7280;
+                    font-weight: 500;
+                    font-size: 0.875rem;
+                    padding: 0 1.5rem;
+                    gap: 1rem;
+                }
+                .pricing-list-header span {
+                    text-align: center;
+                }
+                .pricing-list-header span:first-child {
+                    text-align: right;
+                }
+                .pricing-list-header span:last-child {
+                    text-align: right;
+                }
+                .loading-placeholder {
+                    text-align: center;
+                    padding: 40px;
+                    color: #6b7280;
+                    font-size: 1.1rem;
+                }
+                .btn-primary-yellow {
+                    background-color: #fceec4;
+                    border: 1px solid #f0dca4;
+                    color: #343a40;
+                    font-weight: 500;
+                    padding: 0.6rem 1.2rem;
+                    border-radius: 6px;
+                    cursor: pointer;
+                    display: flex;
+                    align-items: center;
+                    gap: 0.5rem;
+                }
+                .btn-primary-yellow:hover {
+                    background-color: #fff3cd;
+                }
+            `}</style>
+            
+            <TopActionsBar />
+            
+            <div className="pricing-page-header">
+                <h2 className="text-2xl font-medium text-gray-800">תעריפי נסיעות</h2>
+                <button className="btn-primary-yellow" onClick={handleAddNewPricing}>
+                    <Plus size={18} />
+                    הוספת תעריף
+                </button>
             </div>
             
-            <div>
-              {pricing.map((pricingItem) => (
-                <div key={pricingItem.id} className="table-row" style={{ gridTemplateColumns: "2fr 2fr 1fr 1fr 1fr 1fr 1fr 150px" }}>
-                  <div className="font-semibold">{pricingItem.route_name}</div>
-                  <div>{pricingItem.origin} - {pricingItem.destination}</div>
-                  <div className="capitalize">{pricingItem.service_type}</div>
-                  <div className="font-semibold">{formatCurrency(pricingItem.base_price)}</div>
-                  <div>{pricingItem.per_km_price ? formatCurrency(pricingItem.per_km_price) : '-'}</div>
-                  <div>{pricingItem.min_price ? formatCurrency(pricingItem.min_price) : '-'}</div>
-                  <div>
-                    <Badge className={`${pricingItem.is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'} border`}>
-                      {pricingItem.is_active ? 'פעיל' : 'לא פעיל'}
-                    </Badge>
-                  </div>
-                  <div className="col-actions">
-                    <button onClick={() => handleEditPricing(pricingItem)} className="btn-icon-action" title="עריכה">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                        <path d="m18.5 2.5 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                      </svg>
-                    </button>
-                    <button onClick={() => handleViewPricing(pricingItem)} className="btn-icon-action" title="צפייה">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                        <circle cx="12" cy="12" r="3"/>
-                      </svg>
-                    </button>
-                    <button onClick={() => handleDeletePricing(pricingItem)} className="btn-icon-action" title="מחיקה">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <polyline points="3,6 5,6 21,6"/>
-                        <path d="m19,6v14a2,2 0 0,1-2,2H7a2,2 0 0,1-2-2V6m3,0V4a2,2 0 0,1 2-2h4a2,2 0 0,1 2,2v2"/>
-                      </svg>
-                    </button>
-                  </div>
-                </div>
-              ))}
-              
-              {pricing.length === 0 && (
-                <div className="empty-state">
-                  <div className="empty-state-icon">💰</div>
-                  <div className="empty-state-title">אין מחירים במערכת</div>
-                  <div className="empty-state-description">הוסף מחיר חדש כדי להתחיל</div>
-                </div>
-              )}
+            <div className="pricing-layout">
+                <PricingFilter routes={routes} onFilterChange={handleFilterChange} />
+                
+                <main className="pricing-content">
+                    {isLoading ? (
+                        <div className="loading-placeholder">טוען תעריפים...</div>
+                    ) : (
+                        <>
+                            <div className="pricing-list-header">
+                                <span>מסלול</span>
+                                <span>הלוך</span>
+                                <span>חזור</span>
+                                <span>הלוך ושוב</span>
+                                <span>פעולות</span>
+                            </div>
+                            {filteredRoutes.length === 0 ? (
+                                <div className="bg-white p-12 rounded-xl border border-gray-200 text-center">
+                                    <div className="text-4xl mb-4">💰</div>
+                                    <p className="text-gray-500 text-lg">אין תעריפים במערכת</p>
+                                    <p className="text-gray-400 text-sm mt-2">תעריפים חדשים יוצגו כאן</p>
+                                </div>
+                            ) : (
+                                filteredRoutes.map(route => (
+                                    <PricingRow 
+                                        key={route.id} 
+                                        route={route}
+                                        onEdit={handleEditPricing}
+                                        onView={handleViewPricing}
+                                        onDelete={handleDeletePricing}
+                                    />
+                                ))
+                            )}
+                        </>
+                    )}
+                </main>
             </div>
-          </div>
         </div>
-      </section>
-
-      {/* Confirmation Modal */}
-      <ConfirmationModal
-        isOpen={confirmModal.isOpen}
-        onClose={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
-        onConfirm={confirmModal.onConfirm}
-        title={confirmModal.title}
-        message={confirmModal.message}
-        confirmText="מחק"
-        cancelText="ביטול"
-        type="danger"
-      />
-    </div>
-  );
+    );
 }
