@@ -6,11 +6,11 @@ import { StopCircle, Edit, Trash2, ArrowUpDown } from "lucide-react";
 import type { Tender } from '@shared/schema';
 
 const statusConfig = {
-  active: { 
+  available: { 
     label: "פנוי", 
     className: "bg-green-100 text-green-700" 
   },
-  waiting: { 
+  taken: { 
     label: "תפוס", 
     className: "bg-red-100 text-red-700" 
   },
@@ -112,7 +112,7 @@ export default function TenderTable({ tenders, onStop, onEdit, onDelete }: Tende
       
       <div>
         {tenders.map((tender) => {
-          const statusStyle = statusConfig[tender.status as keyof typeof statusConfig] || statusConfig.active;
+          const statusStyle = statusConfig[tender.status as keyof typeof statusConfig] || statusConfig.available;
           
           return (
             <div key={tender.id} className="tender-table-row">
@@ -123,7 +123,7 @@ export default function TenderTable({ tenders, onStop, onEdit, onDelete }: Tende
                 {serviceTypeLabels[tender.service_type as keyof typeof serviceTypeLabels] || tender.service_type}
               </div>
               <div className="text-gray-600">
-                {tender.scheduled_time ? format(new Date(tender.scheduled_time), "dd.MM.yyyy HH:mm") : 'N/A'}
+                {tender.created_at ? format(new Date(tender.created_at), "dd.MM.yyyy HH:mm") : 'N/A'}
               </div>
               <div>
                 <Badge className={`${statusStyle.className} border`}>
@@ -134,6 +134,7 @@ export default function TenderTable({ tenders, onStop, onEdit, onDelete }: Tende
                 {tender.driver_id ? (
                   <>
                     <span className="font-medium">נהג #{tender.driver_id}</span>
+                    <span className="text-gray-500"> | טלפון</span>
                   </>
                 ) : (
                   <span className="text-gray-400">לא שויך נהג</span>
