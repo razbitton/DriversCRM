@@ -1,0 +1,339 @@
+import React, { useState } from 'react';
+import { ChevronDown, ChevronUp, Mail } from 'lucide-react';
+
+export default function DriverPaymentsTab({ driver }: any) {
+  const [expandedSections, setExpandedSections] = useState({
+    fixed: true,
+    variable: true,
+    breakdown: true
+  });
+
+  const toggleSection = (section: string) => {
+    setExpandedSections(prev => ({
+      ...prev,
+      [section]: !prev[section]
+    }));
+  };
+
+  // Sample data - in real app, this would come from props or API
+  const paymentsData = {
+    fixed: [
+      { name: "מנוי חודש", amount: 220, renewalDate: "04/2024" },
+      { name: "ערוץ פרמיות", amount: 120, renewalDate: "08/2024" }
+    ],
+    variable: [
+      { 
+        name: "נסיעות שעברו לנהגים אחרים", 
+        details: "11 נסיעות", 
+        calculation: "סה\"כ: 1,523 ₪ לפי 10%", 
+        amount: -1523 
+      },
+      { 
+        name: "נסיעות שקיבל מנהגים אחרים", 
+        details: "10 נסיעות", 
+        calculation: "סה\"כ: 1,523 ₪ לפי 10%", 
+        amount: 1020 
+      },
+      { 
+        name: "נסיעות שקיבל מהמערכת", 
+        details: "27 נסיעות", 
+        calculation: "סה\"כ: 1,523 ₪ לפי 15%", 
+        amount: 2253 
+      }
+    ]
+  };
+
+  const fixedTotal = paymentsData.fixed.reduce((sum, item) => sum + item.amount, 0);
+  const variableTotal = paymentsData.variable.reduce((sum, item) => sum + item.amount, 0);
+  const grandTotal = fixedTotal + variableTotal;
+
+  return (
+    <div className="payments-tab">
+      <style>{`
+        .payments-tab {
+          padding: 1.5rem 0;
+        }
+        
+        .payment-section {
+          margin-bottom: 1.5rem;
+        }
+        
+        .section-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 0.75rem;
+          padding: 0 0.5rem;
+          color: #6c757d;
+          cursor: pointer;
+          user-select: none;
+        }
+        
+        .section-title-group {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+        }
+        
+        .section-header h3 {
+          font-size: 1rem;
+          font-weight: 500;
+          margin: 0;
+          color: #212529;
+        }
+        
+        .section-date {
+          font-size: 0.9rem;
+          color: #6c757d;
+        }
+        
+        .show-more-link {
+          font-size: 0.8rem;
+          text-decoration: none;
+          color: #6c757d;
+          display: flex;
+          align-items: center;
+          gap: 0.25rem;
+        }
+        
+        .payment-card {
+          background-color: #fff;
+          border: 1px solid #e9ecef;
+          border-radius: 8px;
+          padding: 0.5rem 1.5rem;
+          margin-bottom: 0.5rem;
+        }
+        
+        .payment-item {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 1rem 0;
+        }
+        
+        .payment-item:not(:last-child) {
+          border-bottom: 1px solid #e9ecef;
+        }
+        
+        .item-details {
+          display: flex;
+          flex-direction: column;
+          gap: 0.25rem;
+        }
+        
+        .item-details span:first-child {
+          font-weight: 500;
+          color: #212529;
+        }
+        
+        .item-meta {
+          font-size: 0.8rem;
+          color: #6c757d;
+          font-weight: 400;
+        }
+        
+        .item-amount {
+          font-size: 1.1rem;
+          font-weight: 700;
+        }
+        
+        .amount-positive {
+          color: #dc3545;
+        }
+        
+        .amount-negative {
+          color: #28a745;
+        }
+        
+        .summary-row {
+          background-color: #fef8e7;
+          border-radius: 8px;
+          padding: 0.75rem 1.5rem;
+          font-weight: 700;
+          margin-top: 0.5rem;
+        }
+        
+        .summary-row.collapsed {
+          background-color: #f8f9fa;
+          border: 1px solid #e9ecef;
+          margin-bottom: 0.5rem;
+          cursor: pointer;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+        
+        .text-positive {
+          color: #dc3545;
+        }
+        
+        .payment-footer {
+          display: flex;
+          justify-content: flex-end;
+          align-items: center;
+          padding: 1rem 0;
+          background-color: #fff;
+          border-top: 1px solid #e9ecef;
+          margin-top: 2rem;
+          gap: 1rem;
+        }
+        
+        .summary-bar {
+          display: flex;
+          align-items: center;
+          gap: 1.5rem;
+          background-color: #f8f9fa;
+          border-radius: 8px;
+          padding: 0.75rem 1.5rem;
+          flex-grow: 1;
+        }
+        
+        .summary-bar strong {
+          color: #212529;
+        }
+        
+        .summary-bar span {
+          font-size: 1rem;
+          color: #6c757d;
+        }
+        
+        .total-amount {
+          font-size: 1.2rem;
+          font-weight: 700;
+          color: #28a745;
+          margin-left: auto;
+        }
+        
+        .email-btn {
+          background-color: #f8f9fa;
+          border: 1px solid #e9ecef;
+          width: 48px;
+          height: 48px;
+          border-radius: 8px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: #6c757d;
+          cursor: pointer;
+        }
+        
+        .email-btn:hover {
+          background-color: #e9ecef;
+        }
+      `}</style>
+
+      {/* Fixed Payments Section */}
+      <div className="payment-section">
+        <div className="section-header" onClick={() => toggleSection('fixed')}>
+          <div className="section-title-group">
+            <h3>תשלומים קבועים</h3>
+            <span className="section-date">05/2024</span>
+          </div>
+          <div className="show-more-link">
+            הצג עוד
+            {expandedSections.fixed ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+          </div>
+        </div>
+        
+        {expandedSections.fixed ? (
+          <>
+            <div className="payment-card">
+              {paymentsData.fixed.map((item, index) => (
+                <div key={index} className="payment-item">
+                  <div className="item-details">
+                    <span>{item.name}</span>
+                    <span className="item-meta">תאריך חידוש: {item.renewalDate}</span>
+                  </div>
+                  <div className="item-amount">₪ {item.amount.toLocaleString()}</div>
+                </div>
+              ))}
+            </div>
+            <div className="summary-row">
+              <strong>סיכום קבועים: {fixedTotal.toLocaleString()} ₪ <span className="text-positive">(חובה)</span></strong>
+            </div>
+          </>
+        ) : (
+          <div className="summary-row collapsed" onClick={() => toggleSection('fixed')}>
+            <strong>סיכום קבועים: <span className="text-positive">{fixedTotal.toLocaleString()} ₪ (חובה)</span></strong>
+            <ChevronDown size={16} />
+          </div>
+        )}
+      </div>
+
+      {/* Variable Payments Section */}
+      <div className="payment-section">
+        <div className="section-header" onClick={() => toggleSection('variable')}>
+          <div className="section-title-group">
+            <h3>תשלומים משתנים</h3>
+            <span className="section-date">05/2024</span>
+          </div>
+          <div className="show-more-link">
+            הצג עוד
+            {expandedSections.variable ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+          </div>
+        </div>
+        
+        {expandedSections.variable ? (
+          <>
+            <div className="payment-card">
+              {paymentsData.variable.map((item, index) => (
+                <div key={index} className="payment-item">
+                  <div className="item-details">
+                    <span>{item.name} ({item.details})</span>
+                    <span className="item-meta">{item.calculation}</span>
+                  </div>
+                  <div className={`item-amount ${item.amount >= 0 ? 'amount-positive' : 'amount-negative'}`}>
+                    ₪ {item.amount >= 0 ? '' : '-'}{Math.abs(item.amount).toLocaleString()}
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="summary-row">
+              <strong>סיכום משתנים: <span className="amount-negative">{variableTotal.toLocaleString()} ₪</span> (יתרה)</strong>
+            </div>
+          </>
+        ) : (
+          <div className="summary-row collapsed" onClick={() => toggleSection('variable')}>
+            <strong>סיכום משתנים: <span className="amount-negative">{variableTotal.toLocaleString()} ₪ (יתרה)</span></strong>
+            <ChevronDown size={16} />
+          </div>
+        )}
+      </div>
+
+      {/* Breakdown Section */}
+      <div className="payment-section">
+        <div className="section-header" onClick={() => toggleSection('breakdown')}>
+          <div className="section-title-group">
+            <h3>פירוט נסיעות</h3>
+            <span className="section-date">05/2024</span>
+          </div>
+          <div className="show-more-link">
+            הצג עוד
+            {expandedSections.breakdown ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+          </div>
+        </div>
+        
+        {!expandedSections.breakdown && (
+          <div className="summary-row collapsed" onClick={() => toggleSection('breakdown')}>
+            <strong>סיכום משתנים: <span className="amount-negative">{variableTotal.toLocaleString()} ₪ (יתרה)</span></strong>
+            <ChevronDown size={16} />
+          </div>
+        )}
+      </div>
+
+      {/* Payment Footer */}
+      <footer className="payment-footer">
+        <button className="email-btn">
+          <Mail size={18} />
+        </button>
+        <div className="summary-bar">
+          <strong>סיכום תשלומים</strong>
+          <span>קבועים: <strong className="amount-positive">{fixedTotal.toLocaleString()} ₪</strong></span>
+          <span>משתנים: <strong className="amount-negative">{variableTotal.toLocaleString()} ₪</strong></span>
+          <span>=</span>
+          <strong className="total-amount">{grandTotal.toLocaleString()} ₪</strong>
+        </div>
+      </footer>
+    </div>
+  );
+}
