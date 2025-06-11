@@ -4,6 +4,8 @@ import { Plus, Filter } from "lucide-react";
 import TopActionsBar from "@/components/common/TopActionsBar";
 import SearchInput from "@/components/common/SearchInput";
 import ConfirmationModal from "@/components/common/ConfirmationModal";
+import PricingFilter from "@/components/pricing/PricingFilter";
+import PricingRow from "@/components/pricing/PricingRow";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency } from "@/utils";

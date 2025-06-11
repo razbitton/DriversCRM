@@ -4,6 +4,8 @@ import { Plus, Filter } from "lucide-react";
 import TopActionsBar from "@/components/common/TopActionsBar";
 import SearchInput from "@/components/common/SearchInput";
 import ConfirmationModal from "@/components/common/ConfirmationModal";
+import PaymentTable from "@/components/payments/PaymentTable";
+import PaymentTabs from "@/components/payments/PaymentTabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
@@ -92,12 +94,11 @@ export default function Payments() {
     }
   };
 
-  const tabs = [
-    { id: "all", label: `כל התשלומים (${payments.length})` },
-    { id: "pending", label: `ממתינים (${payments.filter(p => p.status === "pending").length})` },
-    { id: "paid", label: `שולמו (${payments.filter(p => p.status === "paid").length})` },
-    { id: "cancelled", label: `בוטלו (${payments.filter(p => p.status === "cancelled").length})` },
-  ];
+  const tabCounts = {
+    all: payments.length,
+    drivers: payments.filter(p => p.payment_type === "salary").length,
+    debts: payments.filter(p => p.status === "pending").length,
+  };
 
   if (isLoading) {
     return (
@@ -116,20 +117,11 @@ export default function Payments() {
       
       <section>
         <div className="toolbar-container">
-          {/* Tabs Navigation */}
-          <nav className="tab-navigation">
-            <div style={{ display: 'flex', gap: '2rem' }}>
-              {tabs.map((tab) => (
-                <button
-                  key={tab.id}
-                  className={`tab-link ${activeTab === tab.id ? 'active' : ''}`}
-                  onClick={() => setActiveTab(tab.id)}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </div>
-          </nav>
+          <PaymentTabs 
+            activeTab={activeTab} 
+            onTabChange={setActiveTab} 
+            counts={tabCounts} 
+          />
 
           {/* Toolbar */}
           <div className="flex items-center gap-4">
