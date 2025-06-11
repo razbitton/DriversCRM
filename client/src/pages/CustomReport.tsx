@@ -1,471 +1,479 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from 'react';
 import { useQuery } from "@tanstack/react-query";
-import { Filter, Download, Plus, X, Calendar, BarChart3 } from "lucide-react";
-import TopActionsBar from "@/components/common/TopActionsBar";
-import { Button } from "@/components/ui/button";
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { format } from "date-fns";
-import { formatCurrency, formatDate } from "@/utils";
-import type { Driver, Trip, Payment, Client } from "@shared/schema";
+import TopActionsBar from '@/components/common/TopActionsBar';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Switch } from '@/components/ui/switch';
+import { Calendar, Clock, FileText, Eye, X } from 'lucide-react';
+import type { Driver } from "@shared/schema";
 
-type ReportField = {
-  id: string;
-  label: string;
-  table: string;
-  type: 'text' | 'number' | 'date' | 'currency' | 'status';
-};
-
-type ReportFilter = {
-  id: string;
-  field: string;
-  operator: 'equals' | 'contains' | 'greater_than' | 'less_than' | 'between';
-  value: string | number;
-  value2?: string | number; // For between operator
-};
-
-const availableFields: ReportField[] = [
-  // Driver fields
-  { id: 'driver_name', label: 'שם נהג', table: 'drivers', type: 'text' },
-  { id: 'driver_phone', label: 'טלפון נהג', table: 'drivers', type: 'text' },
-  { id: 'driver_license', label: 'רישיון נהיגה', table: 'drivers', type: 'text' },
-  { id: 'driver_status', label: 'סטטוס נהג', table: 'drivers', type: 'status' },
-  { id: 'driver_vehicle', label: 'רכב נהג', table: 'drivers', type: 'text' },
-  
-  // Trip fields
-  { id: 'trip_number', label: 'מספר נסיעה', table: 'trips', type: 'text' },
-  { id: 'trip_origin', label: 'נקודת מוצא', table: 'trips', type: 'text' },
-  { id: 'trip_destination', label: 'יעד', table: 'trips', type: 'text' },
-  { id: 'trip_client', label: 'לקוח', table: 'trips', type: 'text' },
-  { id: 'trip_type', label: 'סוג נסיעה', table: 'trips', type: 'status' },
-  { id: 'trip_status', label: 'סטטוס נסיעה', table: 'trips', type: 'status' },
-  { id: 'trip_scheduled_time', label: 'זמן מתוכנן', table: 'trips', type: 'date' },
-  { id: 'trip_price', label: 'מחיר נסיעה', table: 'trips', type: 'currency' },
-  
-  // Client fields
-  { id: 'client_name', label: 'שם לקוח', table: 'clients', type: 'text' },
-  { id: 'client_phone', label: 'טלפון לקוח', table: 'clients', type: 'text' },
-  { id: 'client_city', label: 'עיר לקוח', table: 'clients', type: 'text' },
-  { id: 'client_status', label: 'סטטוס לקוח', table: 'clients', type: 'status' },
-  { id: 'client_payment_status', label: 'סטטוס תשלום לקוח', table: 'clients', type: 'status' },
-  
-  // Payment fields
-  { id: 'payment_amount', label: 'סכום תשלום', table: 'payments', type: 'currency' },
-  { id: 'payment_type', label: 'סוג תשלום', table: 'payments', type: 'status' },
-  { id: 'payment_status', label: 'סטטוס תשלום', table: 'payments', type: 'status' },
-  { id: 'payment_date', label: 'תאריך תשלום', table: 'payments', type: 'date' },
-];
-
-export default function CustomReport() {
-  const [reportName, setReportName] = useState<string>("");
-  const [selectedTables, setSelectedTables] = useState<string[]>(['drivers']);
-  const [selectedFields, setSelectedFields] = useState<string[]>(['driver_name', 'driver_phone', 'driver_status']);
-  const [filters, setFilters] = useState<ReportFilter[]>([]);
-  const [dateRange, setDateRange] = useState<{ start: string; end: string }>({
-    start: '',
-    end: ''
-  });
-  const [reportData, setReportData] = useState<any[]>([]);
-  const [isGenerating, setIsGenerating] = useState(false);
-
-  // Fetch all data
+const DriverSelector = ({ selectedDrivers, onDriversChange }: { selectedDrivers: any[], onDriversChange: (drivers: any[]) => void }) => {
   const { data: drivers = [] } = useQuery<Driver[]>({
     queryKey: ["/api/drivers"],
   });
 
-  const { data: trips = [] } = useQuery<Trip[]>({
-    queryKey: ["/api/trips"],
-  });
-
-  const { data: payments = [] } = useQuery<Payment[]>({
-    queryKey: ["/api/payments"],
-  });
-
-  const { data: clients = [] } = useQuery<Client[]>({
-    queryKey: ["/api/clients"],
-  });
-
-  const handleTableToggle = (table: string) => {
-    if (selectedTables.includes(table)) {
-      setSelectedTables(prev => prev.filter(t => t !== table));
-      // Remove fields from deselected table
-      setSelectedFields(prev => prev.filter(fieldId => {
-        const field = availableFields.find(f => f.id === fieldId);
-        return field && field.table !== table;
-      }));
-    } else {
-      setSelectedTables(prev => [...prev, table]);
-    }
-  };
-
-  const handleFieldToggle = (fieldId: string) => {
-    if (selectedFields.includes(fieldId)) {
-      setSelectedFields(prev => prev.filter(f => f !== fieldId));
-    } else {
-      setSelectedFields(prev => [...prev, fieldId]);
-    }
-  };
-
-  const addFilter = () => {
-    const newFilter: ReportFilter = {
-      id: Date.now().toString(),
-      field: availableFields[0].id,
-      operator: 'equals',
-      value: ''
-    };
-    setFilters(prev => [...prev, newFilter]);
-  };
-
-  const removeFilter = (filterId: string) => {
-    setFilters(prev => prev.filter(f => f.id !== filterId));
-  };
-
-  const updateFilter = (filterId: string, updates: Partial<ReportFilter>) => {
-    setFilters(prev => prev.map(f => f.id === filterId ? { ...f, ...updates } : f));
-  };
-
-  const generateReport = () => {
-    setIsGenerating(true);
-    
-    // Mock report generation - in real implementation, this would call the backend
-    setTimeout(() => {
-      let data: any[] = [];
-      
-      if (selectedTables.includes('drivers')) {
-        data = drivers.map(driver => ({
-          driver_name: `${driver.first_name} ${driver.last_name}`,
-          driver_phone: driver.phone,
-          driver_license: driver.license_number,
-          driver_status: driver.status,
-          driver_vehicle: driver.vehicle_number || '-',
-          _type: 'driver',
-          _id: driver.id
-        }));
-      }
-      
-      if (selectedTables.includes('trips')) {
-        const tripData = trips.map(trip => ({
-          trip_number: trip.trip_number,
-          trip_origin: trip.origin,
-          trip_destination: trip.destination,
-          trip_client: trip.client_name,
-          trip_type: trip.trip_type,
-          trip_status: trip.status,
-          trip_scheduled_time: trip.scheduled_time,
-          trip_price: trip.price || 0,
-          _type: 'trip',
-          _id: trip.id
-        }));
-        
-        if (selectedTables.length === 1) {
-          data = tripData;
-        } else {
-          // Join with drivers if both selected
-          data = data.map(row => {
-            const relatedTrips = tripData.filter(t => 
-              trips.find(trip => trip.id === t._id)?.driver_id === row._id
-            );
-            return relatedTrips.length > 0 ? { ...row, ...relatedTrips[0] } : row;
-          });
-        }
-      }
-      
-      // Apply filters
-      const filteredData = data.filter(row => {
-        return filters.every(filter => {
-          const value = row[filter.field];
-          const filterValue = filter.value;
-          
-          switch (filter.operator) {
-            case 'equals':
-              return value?.toString().toLowerCase() === filterValue?.toString().toLowerCase();
-            case 'contains':
-              return value?.toString().toLowerCase().includes(filterValue?.toString().toLowerCase());
-            case 'greater_than':
-              return Number(value) > Number(filterValue);
-            case 'less_than':
-              return Number(value) < Number(filterValue);
-            default:
-              return true;
-          }
-        });
-      });
-      
-      setReportData(filteredData);
-      setIsGenerating(false);
-    }, 1500);
-  };
-
-  const exportReport = () => {
-    console.log("Exporting custom report:", reportName);
-    // TODO: Implement export functionality
-  };
-
-  const getAvailableFields = () => {
-    return availableFields.filter(field => selectedTables.includes(field.table));
-  };
-
-  const renderFieldValue = (field: ReportField, value: any) => {
-    if (!value && value !== 0) return '-';
-    
-    switch (field.type) {
-      case 'currency':
-        return formatCurrency(value);
-      case 'date':
-        return formatDate(value);
-      case 'status':
-        return (
-          <Badge className="bg-blue-100 text-blue-700 border">
-            {value}
-          </Badge>
-        );
-      default:
-        return value;
+  const handleDriverSelect = (driverId: string) => {
+    const driver = drivers.find(d => d.id.toString() === driverId);
+    if (driver && !selectedDrivers.find(d => d.id === driver.id)) {
+      onDriversChange([...selectedDrivers, { id: driver.id, full_name: driver.full_name }]);
     }
   };
 
   return (
-    <div className="page-container">
+    <Select onValueChange={handleDriverSelect}>
+      <SelectTrigger>
+        <SelectValue placeholder="בחר נהג..." />
+      </SelectTrigger>
+      <SelectContent>
+        {drivers.map(driver => (
+          <SelectItem key={driver.id} value={driver.id.toString()}>
+            {driver.full_name}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+};
+
+const CustomReportTable = ({ reports }: { reports: any[] }) => {
+  const formatCurrency = (amount: number) => `₪ ${amount?.toLocaleString() || '0'}`;
+
+  return (
+    <div className="data-table-container">
+      <div className="table-header">
+        <div>מספר סידורי</div>
+        <div>שם הנהג</div>
+        <div>קבועים</div>
+        <div>משתנים חובה</div>
+        <div>משתנים זכות</div>
+        <div>יתרה קודמת</div>
+        <div>כמות נסיעות</div>
+        <div>סה"כ</div>
+        <div className="col-actions justify-end"></div>
+      </div>
+      <div className="table-body">
+        {reports.map((report) => (
+          <div key={report.id} className="table-row">
+            <div>{report.serial_number}</div>
+            <div className="font-semibold text-gray-900">{report.driver_name}</div>
+            <div>{formatCurrency(report.fixed_amount)}</div>
+            <div>{formatCurrency(report.mandatory_variables)}</div>
+            <div>{formatCurrency(report.optional_variables)}</div>
+            <div>{formatCurrency(report.previous_balance)}</div>
+            <div>{report.trip_count}</div>
+            <div className="font-semibold">{formatCurrency(report.total_amount)}</div>
+            <div className="col-actions">
+              <button className="btn-icon-action" title="פרטים"><FileText size={16} /></button>
+              <button className="btn-icon-action" title="צפה"><Eye size={16} /></button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+export default function CustomReport() {
+  const [reports, setReports] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [selectedDrivers, setSelectedDrivers] = useState<any[]>([]);
+  const [allAvailableDrivers, setAllAvailableDrivers] = useState<any[]>([]);
+  const [formData, setFormData] = useState({
+    dateRange: "15/06/24 - 18/08/24",
+    timeRange: "09:00 - 00:00",
+    driverPhone: "",
+    serviceType: "",
+    channelNumber: "",
+    veteranName: "",
+    sync: false,
+    incomingTrips: false,
+    outgoingTrips: false,
+    driversWithDebts: false,
+    driversWithCredits: false
+  });
+
+  useEffect(() => {
+    const loadReports = async () => {
+      try {
+        // Mock data for demonstration - in real app would fetch from API
+        const mockReports = [
+          {
+            id: 1,
+            serial_number: '001',
+            driver_name: 'נהג איתי',
+            fixed_amount: 2500,
+            mandatory_variables: 800,
+            optional_variables: 300,
+            previous_balance: -150,
+            trip_count: 28,
+            total_amount: 3450
+          },
+          {
+            id: 2,
+            serial_number: '002',
+            driver_name: 'נהג יוסף',
+            fixed_amount: 2500,
+            mandatory_variables: 920,
+            optional_variables: 450,
+            previous_balance: 200,
+            trip_count: 32,
+            total_amount: 4070
+          },
+          {
+            id: 3,
+            serial_number: '003',
+            driver_name: 'נהג דוד',
+            fixed_amount: 2500,
+            mandatory_variables: 750,
+            optional_variables: 200,
+            previous_balance: 0,
+            trip_count: 25,
+            total_amount: 3450
+          }
+        ];
+        setReports(mockReports);
+      } catch (error) {
+        console.error("Error loading reports:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadReports();
+
+    // Simulate fetching all drivers
+    const fetchAllDrivers = async () => {
+      const mockAllDrivers = [
+        { id: 'd1', full_name: 'נהג איתי' },
+        { id: 'd2', full_name: 'נהג יוסף' },
+        { id: 'd3', full_name: 'נהג דוד' },
+        { id: 'd4', full_name: 'נהג יואל' },
+        { id: 'd5', full_name: 'נהג משה' },
+      ];
+      setAllAvailableDrivers(mockAllDrivers);
+    };
+    fetchAllDrivers();
+  }, []);
+
+  const handleDriversChange = (drivers: any[]) => {
+    setSelectedDrivers(drivers);
+  };
+  
+  const handleRemoveDriver = (driverId: string) => {
+    setSelectedDrivers(prev => prev.filter(d => d.id !== driverId));
+  };
+
+  const handleInputChange = (field: string, value: any) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const handleSearch = () => {
+    console.log("Searching with filters:", {
+      selectedDrivers,
+      formData
+    });
+    // Here would be the logic for searching and filtering
+  };
+
+  return (
+    <div className="p-8 bg-gray-50 min-h-screen">
+      <style>{`
+        .form-section {
+          background: white;
+          border-radius: 8px;
+          border: 1px solid #e9ecef;
+        }
+        .form-grid {
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
+          gap: 2rem;
+          padding: 2rem;
+        }
+        .form-column {
+          display: flex;
+          flex-direction: column;
+          gap: 1.5rem;
+          padding: 1.5rem;
+          border: 1px solid #f1f3f5;
+          border-radius: 8px;
+        }
+        .input-group {
+          display: flex;
+          flex-direction: column;
+          gap: 0.5rem;
+        }
+        .input-group label, .checkbox-group label {
+          font-size: 0.875rem;
+          color: #495057;
+          font-weight: 500;
+        }
+        .input-with-icon {
+          position: relative;
+        }
+        .input-with-icon .icon {
+          position: absolute;
+          left: 10px;
+          top: 50%;
+          transform: translateY(-50%);
+          color: #adb5bd;
+        }
+        .checkbox-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 1rem;
+        }
+        .checkbox-group {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+        }
+        .action-buttons {
+          display: flex;
+          gap: 1rem;
+          margin-top: auto;
+        }
+        .btn-primary-yellow {
+          background-color: #fceec4;
+          border: 1px solid #f0dca4;
+          color: #343a40;
+          font-weight: 500;
+          padding: 0.6rem 1.2rem;
+          border-radius: 6px;
+          cursor: pointer;
+        }
+        .btn-primary-yellow:hover {
+          background-color: #fff3cd;
+        }
+        .btn-secondary-light {
+          background-color: #f8f9fa;
+          border: 1px solid #dee2e6;
+          color: #343a40;
+          padding: 0.6rem 1.2rem;
+          border-radius: 6px;
+          cursor: pointer;
+        }
+        .btn-secondary-light:hover {
+          background-color: #e9ecef;
+        }
+        /* Table styles */
+        .data-table-container {
+          margin-top: 2rem;
+          background-color: #fff;
+          border-radius: 8px;
+          overflow: hidden;
+          border: 1px solid #e9ecef;
+        }
+        .table-header, .table-row {
+          display: grid;
+          grid-template-columns: 1fr 2fr 1fr 1fr 1fr 1fr 1fr 1fr 120px;
+          align-items: center;
+          padding: 15px 20px;
+          gap: 15px;
+        }
+        .table-header {
+          background-color: #f8f9fa;
+          color: #6c757d;
+          font-weight: 500;
+          font-size: 14px;
+          border-bottom: 1px solid #dee2e6;
+        }
+        .table-row {
+          border-bottom: 1px solid #f1f3f5;
+          font-size: 15px;
+        }
+        .table-row:last-child { border-bottom: none; }
+        .col-actions { display: flex; justify-content: flex-end; align-items: center; gap: 8px; }
+        .btn-icon-action { background: #fef8e7; border: 1px solid #f0dca4; color: #a8842c; width: 32px; height: 32px; border-radius: 6px; cursor: pointer; display: flex; justify-content: center; align-items: center; }
+        .selected-drivers-container {
+          margin-top: 1rem;
+          display: flex;
+          flex-wrap: wrap;
+          gap: 6px;
+        }
+        .driver-badge {
+          background-color: #fef3c7;
+          color: #92400e;
+          padding: 4px 8px;
+          border-radius: 12px;
+          font-size: 12px;
+          display: flex;
+          align-items: center;
+          gap: 4px;
+        }
+        .remove-driver {
+          cursor: pointer;
+          width: 14px;
+          height: 14px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+      `}</style>
+      
       <TopActionsBar />
       
-      <div className="page-header">
-        <h1 className="page-title">דוח מותאם אישי</h1>
-        <p className="text-gray-600">צור דוח מותאם לפי הצרכים שלך</p>
+      <h2 className="text-2xl font-medium mb-4">דוחות בהתאמה אישית</h2>
+
+      <div className="tabs mb-6">
+        <span className="pb-2 border-b-2 border-yellow-400 font-semibold text-gray-800">בחירת נהג</span>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Report Configuration */}
-        <div className="lg:col-span-1 space-y-6">
-          {/* Report Name */}
-          <div className="content-card p-6">
-            <h3 className="text-lg font-semibold mb-4">שם הדוח</h3>
-            <Input
-              value={reportName}
-              onChange={(e) => setReportName(e.target.value)}
-              placeholder="הכנס שם לדוח..."
-              className="w-full"
-            />
-          </div>
-
-          {/* Data Sources */}
-          <div className="content-card p-6">
-            <h3 className="text-lg font-semibold mb-4">מקורות מידע</h3>
-            <div className="space-y-3">
-              {[
-                { id: 'drivers', label: 'נהגים', icon: '👤' },
-                { id: 'trips', label: 'נסיעות', icon: '🚗' },
-                { id: 'clients', label: 'לקוחות', icon: '👥' },
-                { id: 'payments', label: 'תשלומים', icon: '💳' }
-              ].map((table) => (
-                <div key={table.id} className="flex items-center space-x-2">
-                  <Checkbox
-                    id={table.id}
-                    checked={selectedTables.includes(table.id)}
-                    onCheckedChange={() => handleTableToggle(table.id)}
+      <div className="form-section">
+        <div className="form-grid">
+          {/* Left Column */}
+          <div className="form-column">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="input-group">
+                <label>טווח תאריכים:</label>
+                <div className="input-with-icon">
+                  <Input 
+                    value={formData.dateRange}
+                    onChange={(e) => handleInputChange('dateRange', e.target.value)}
                   />
-                  <label htmlFor={table.id} className="flex items-center gap-2 cursor-pointer">
-                    <span>{table.icon}</span>
-                    <span>{table.label}</span>
-                  </label>
+                  <Calendar size={16} className="icon" />
                 </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Date Range */}
-          <div className="content-card p-6">
-            <h3 className="text-lg font-semibold mb-4">טווח תאריכים</h3>
-            <div className="space-y-3">
-              <div>
-                <label className="block text-sm font-medium mb-1">תאריך התחלה</label>
-                <Input
-                  type="date"
-                  value={dateRange.start}
-                  onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
-                />
               </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">תאריך סיום</label>
-                <Input
-                  type="date"
-                  value={dateRange.end}
-                  onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
+              <div className="input-group">
+                <label>טווח שעות:</label>
+                <div className="input-with-icon">
+                  <Input 
+                    value={formData.timeRange}
+                    onChange={(e) => handleInputChange('timeRange', e.target.value)}
+                  />
+                  <Clock size={16} className="icon" />
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <label>סנכרון:</label>
+                <Switch 
+                  checked={formData.sync}
+                  onCheckedChange={(checked) => handleInputChange('sync', checked)}
                 />
               </div>
             </div>
+            <div className="checkbox-grid">
+              <div className="checkbox-group">
+                <Checkbox 
+                  id="incoming" 
+                  checked={formData.incomingTrips}
+                  onCheckedChange={(checked) => handleInputChange('incomingTrips', checked)}
+                />
+                <label htmlFor="incoming">נסיעות נכנסות</label>
+              </div>
+              <div className="checkbox-group">
+                <Checkbox 
+                  id="outgoing"
+                  checked={formData.outgoingTrips}
+                  onCheckedChange={(checked) => handleInputChange('outgoingTrips', checked)}
+                />
+                <label htmlFor="outgoing">נסיעות יוצאות</label>
+              </div>
+              <div className="checkbox-group">
+                <Checkbox 
+                  id="debts"
+                  checked={formData.driversWithDebts}
+                  onCheckedChange={(checked) => handleInputChange('driversWithDebts', checked)}
+                />
+                <label htmlFor="debts">נהגים עם חובות</label>
+              </div>
+              <div className="checkbox-group">
+                <Checkbox 
+                  id="credits"
+                  checked={formData.driversWithCredits}
+                  onCheckedChange={(checked) => handleInputChange('driversWithCredits', checked)}
+                />
+                <label htmlFor="credits">נהגים עם זכויות</label>
+              </div>
+            </div>
+            <div className="action-buttons">
+              <button className="btn-secondary-light">סינון נהג נוסף</button>
+              <button className="btn-primary-yellow" onClick={handleSearch}>
+                סינון וחיפוש דוח
+              </button>
+            </div>
           </div>
-
-          {/* Generate Report Button */}
-          <Button
-            onClick={generateReport}
-            disabled={isGenerating || selectedFields.length === 0}
-            className="w-full btn-primary-fleet"
-          >
-            {isGenerating ? (
-              <>
-                <div className="spinner w-4 h-4 ml-2"></div>
-                מייצר דוח...
-              </>
-            ) : (
-              <>
-                <BarChart3 size={16} />
-                יצירת דוח
-              </>
-            )}
-          </Button>
-        </div>
-
-        {/* Fields and Filters */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Field Selection */}
-          <div className="content-card p-6">
-            <h3 className="text-lg font-semibold mb-4">בחירת שדות</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {getAvailableFields().map((field) => (
-                <div key={field.id} className="flex items-center space-x-2">
-                  <Checkbox
-                    id={field.id}
-                    checked={selectedFields.includes(field.id)}
-                    onCheckedChange={() => handleFieldToggle(field.id)}
+          
+          {/* Right Column */}
+          <div className="form-column">
+             <div className="grid grid-cols-2 gap-4">
+                <div className="input-group">
+                  <label>בחירת נהג:</label>
+                  <DriverSelector 
+                    selectedDrivers={selectedDrivers}
+                    onDriversChange={handleDriversChange}
                   />
-                  <label htmlFor={field.id} className="cursor-pointer text-sm">
-                    {field.label}
-                  </label>
                 </div>
-              ))}
+                 <div className="input-group">
+                  <label>טלפון הנהג:</label>
+                  <Input 
+                    placeholder="הזן טלפון" 
+                    value={formData.driverPhone}
+                    onChange={(e) => handleInputChange('driverPhone', e.target.value)}
+                  />
+                </div>
             </div>
-          </div>
-
-          {/* Filters */}
-          <div className="content-card p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold">פילטרים</h3>
-              <Button onClick={addFilter} variant="outline" size="sm">
-                <Plus size={16} />
-                הוסף פילטר
-              </Button>
+            <div className="grid grid-cols-3 gap-4">
+               <div className="input-group">
+                  <label>סוג שירות:</label>
+                  <Select value={formData.serviceType} onValueChange={(value) => handleInputChange('serviceType', value)}>
+                    <SelectTrigger><SelectValue placeholder="בחר" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="delivery">משלוח</SelectItem>
+                      <SelectItem value="ride">הסעה</SelectItem>
+                      <SelectItem value="special">מיוחד</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                 <div className="input-group">
+                  <label>מספר ערוץ:</label>
+                  <Select value={formData.channelNumber} onValueChange={(value) => handleInputChange('channelNumber', value)}>
+                    <SelectTrigger><SelectValue placeholder="בחר" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="1">ערוץ 1</SelectItem>
+                      <SelectItem value="2">ערוץ 2</SelectItem>
+                      <SelectItem value="3">ערוץ 3</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                 <div className="input-group">
+                  <label>שם וותק:</label>
+                  <Select value={formData.veteranName} onValueChange={(value) => handleInputChange('veteranName', value)}>
+                    <SelectTrigger><SelectValue placeholder="בחר" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="veteran1">וותיק 1</SelectItem>
+                      <SelectItem value="veteran2">וותיק 2</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
             </div>
-            
-            {filters.length === 0 ? (
-              <p className="text-gray-500 text-center py-4">אין פילטרים פעילים</p>
-            ) : (
-              <div className="space-y-4">
-                {filters.map((filter) => (
-                  <div key={filter.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                    <Select
-                      value={filter.field}
-                      onValueChange={(value) => updateFilter(filter.id, { field: value })}
-                    >
-                      <SelectTrigger className="w-48">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {getAvailableFields().map((field) => (
-                          <SelectItem key={field.id} value={field.id}>
-                            {field.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-
-                    <Select
-                      value={filter.operator}
-                      onValueChange={(value: any) => updateFilter(filter.id, { operator: value })}
-                    >
-                      <SelectTrigger className="w-32">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="equals">שווה ל</SelectItem>
-                        <SelectItem value="contains">מכיל</SelectItem>
-                        <SelectItem value="greater_than">גדול מ</SelectItem>
-                        <SelectItem value="less_than">קטן מ</SelectItem>
-                      </SelectContent>
-                    </Select>
-
-                    <Input
-                      value={filter.value}
-                      onChange={(e) => updateFilter(filter.id, { value: e.target.value })}
-                      placeholder="ערך..."
-                      className="flex-1"
-                    />
-
-                    <Button
-                      onClick={() => removeFilter(filter.id)}
-                      variant="outline"
-                      size="sm"
-                    >
-                      <X size={16} />
-                    </Button>
-                  </div>
-                ))}
-              </div>
+            {selectedDrivers.length > 0 && (
+                <div className="selected-drivers-container">
+                  {selectedDrivers.map(driver => (
+                    <div key={driver.id} className="driver-badge">
+                      {driver.full_name}
+                      <span className="remove-driver" onClick={() => handleRemoveDriver(driver.id)}>
+                        <X size={12} />
+                      </span>
+                    </div>
+                  ))}
+                </div>
             )}
           </div>
-
-          {/* Report Results */}
-          {reportData.length > 0 && (
-            <div className="content-card">
-              <div className="p-6 border-b">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold">תוצאות הדוח</h3>
-                  <div className="flex items-center gap-3">
-                    <span className="text-sm text-gray-500">
-                      {reportData.length} תוצאות
-                    </span>
-                    <Button onClick={exportReport} className="btn-primary-fleet">
-                      <Download size={16} />
-                      ייצוא
-                    </Button>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="overflow-x-auto">
-                <div className="data-table">
-                  <div 
-                    className="table-header" 
-                    style={{ 
-                      gridTemplateColumns: `repeat(${selectedFields.length}, 1fr)`,
-                      minWidth: `${selectedFields.length * 150}px`
-                    }}
-                  >
-                    {selectedFields.map((fieldId) => {
-                      const field = availableFields.find(f => f.id === fieldId);
-                      return <div key={fieldId}>{field?.label}</div>;
-                    })}
-                  </div>
-                  
-                  <div>
-                    {reportData.map((row, index) => (
-                      <div 
-                        key={index} 
-                        className="table-row"
-                        style={{ 
-                          gridTemplateColumns: `repeat(${selectedFields.length}, 1fr)`,
-                          minWidth: `${selectedFields.length * 150}px`
-                        }}
-                      >
-                        {selectedFields.map((fieldId) => {
-                          const field = availableFields.find(f => f.id === fieldId);
-                          const value = row[fieldId];
-                          return (
-                            <div key={fieldId}>
-                              {field ? renderFieldValue(field, value) : '-'}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
       </div>
+      
+      <h3 className="text-xl font-medium mt-10 mb-4">תוצאות החיפוש</h3>
+      {isLoading ? (
+        <div className="text-center py-8 text-gray-500">טוען נתונים...</div>
+      ) : (
+        <CustomReportTable reports={reports} />
+      )}
     </div>
   );
 }
