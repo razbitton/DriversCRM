@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp, decimal, varchar } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, decimal, varchar, date } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -10,12 +10,24 @@ export const users = pgTable("users", {
 
 export const drivers = pgTable("drivers", {
   id: serial("id").primaryKey(),
-  first_name: text("first_name").notNull(),
-  last_name: text("last_name").notNull(),
+  full_name: text("full_name").notNull(),
   phone: text("phone").notNull(),
+  additional_phone: text("additional_phone"),
+  email: text("email"),
+  address: text("address"),
+  residence_area: text("residence_area"),
+  id_number: text("id_number"),
   license_number: text("license_number").notNull(),
   vehicle_number: text("vehicle_number"),
+  vehicle_type: text("vehicle_type"),
+  vehicle_seats: text("vehicle_seats"),
+  vehicle_condition: text("vehicle_condition"),
+  vehicle_category: text("vehicle_category"),
+  join_date: text("join_date"),
   status: text("status").notNull().default("active"), // active, inactive, suspended
+  channel_id: text("channel_id"),
+  fixed_charge: decimal("fixed_charge", { precision: 10, scale: 2 }),
+  variable_charge_percentage: decimal("variable_charge_percentage", { precision: 5, scale: 2 }),
   created_at: timestamp("created_at").defaultNow(),
 });
 

@@ -1,0 +1,137 @@
+import React, { useState, useEffect } from 'react';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Pencil, Plus } from 'lucide-react';
+
+export default function DriverDetailsForm({ driver }) {
+    const [formData, setFormData] = useState({});
+
+    useEffect(() => {
+        if (driver) {
+            const [firstName, ...lastNameParts] = driver.full_name.split(' ');
+            setFormData({
+                first_name: firstName || '',
+                last_name: lastNameParts.join(' ') || '',
+                address: driver.address || '',
+                city: driver.residence_area || '',
+                phone: driver.phone || '',
+                additional_phone: driver.additional_phone || '',
+                email: driver.email || '',
+                notes: '', // Notes field to be added
+                vehicle_condition: driver.vehicle_condition || '',
+                vehicle_seats: driver.vehicle_seats || '',
+                vehicle_type: driver.vehicle_type || ''
+            });
+        }
+    }, [driver]);
+
+    const handleChange = (field, value) => {
+        setFormData(prev => ({ ...prev, [field]: value }));
+    };
+
+    if (!driver) return null;
+
+    return (
+        <form className="driver-form">
+            <section className="form-section">
+                <h5>פרטים אישיים <span className="required">*</span></h5>
+                <div className="form-grid">
+                    <div className="form-group">
+                        <label>שם פרטי <span className="required">*</span></label>
+                        <div className="input-with-icon">
+                            <Input value={formData.first_name} onChange={e => handleChange('first_name', e.target.value)} />
+                            <Pencil size={14} className="icon-override" />
+                        </div>
+                    </div>
+                    <div className="form-group">
+                        <label>שם משפחה <span className="required">*</span></label>
+                        <div className="input-with-icon">
+                            <Input value={formData.last_name} onChange={e => handleChange('last_name', e.target.value)} />
+                            <Pencil size={14} className="icon-override" />
+                        </div>
+                    </div>
+                    <div className="form-group">
+                        <label>כתובת <span className="required">*</span></label>
+                        <div className="input-with-icon">
+                            <Input value={formData.address} onChange={e => handleChange('address', e.target.value)} />
+                            <Pencil size={14} className="icon-override" />
+                        </div>
+                    </div>
+                    <div className="form-group">
+                        <label>עיר</label>
+                        <div className="input-with-icon">
+                            <Input value={formData.city} onChange={e => handleChange('city', e.target.value)} />
+                            <Pencil size={14} className="icon-override" />
+                        </div>
+                    </div>
+                    <div className="form-group">
+                        <label>טלפון <span className="required">*</span></label>
+                        <div className="input-with-icon">
+                            <Input value={formData.phone} onChange={e => handleChange('phone', e.target.value)} />
+                            <Pencil size={14} className="icon-override" />
+                        </div>
+                    </div>
+                    <div className="form-group">
+                        <label>טלפון נוסף <span className="required">*</span></label>
+                        <div className="input-with-icon">
+                            <Input value={formData.additional_phone} onChange={e => handleChange('additional_phone', e.target.value)} />
+                            <Pencil size={14} className="icon-override" />
+                        </div>
+                    </div>
+                    <div className="form-group">
+                        <label>כתובת מייל</label>
+                        <div className="input-with-icon">
+                            <Input type="email" value={formData.email} onChange={e => handleChange('email', e.target.value)} />
+                            <Pencil size={14} className="icon-override" />
+                        </div>
+                    </div>
+                    <div className="form-group">
+                        <label>שדה חדש</label>
+                        <button type="button" className="btn-add-field-icon"><Plus size={16} /></button>
+                    </div>
+                    <div className="form-group full-span">
+                        <label>הערות</label>
+                        <div className="input-with-icon">
+                            <Textarea value={formData.notes} onChange={e => handleChange('notes', e.target.value)} />
+                            <Pencil size={14} className="icon-override" />
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section className="form-section">
+                <h5>פרטי רכב</h5>
+                <div className="form-grid">
+                    <div className="form-group">
+                        <label>מצב</label>
+                        <div className="input-with-icon">
+                            <Input value={formData.vehicle_condition} onChange={e => handleChange('vehicle_condition', e.target.value)} />
+                            <Pencil size={14} className="icon-override" />
+                        </div>
+                    </div>
+                    <div className="form-group">
+                        <label>מספר מקומות</label>
+                        <div className="input-with-icon">
+                            <Input type="number" value={formData.vehicle_seats} onChange={e => handleChange('vehicle_seats', e.target.value)} />
+                            <Pencil size={14} className="icon-override" />
+                        </div>
+                    </div>
+                    <div className="form-group">
+                        <label>סוג רכב</label>
+                        <div className="input-with-icon">
+                            <Input value={formData.vehicle_type} onChange={e => handleChange('vehicle_type', e.target.value)} />
+                            <Pencil size={14} className="icon-override" />
+                        </div>
+                    </div>
+                     <div className="form-group">
+                        <label>שדה חדש</label>
+                        <div className="input-with-icon">
+                             <Input type="text" />
+                             <Pencil size={14} className="icon-override" />
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </form>
+    );
+} 
