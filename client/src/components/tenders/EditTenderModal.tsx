@@ -151,6 +151,15 @@ export default function EditTenderModal({ setOpen, onTenderUpdated, tender }: Ed
         <div className="modal-body-new-trip">
             <div className="form-section">
               <h4>פרטי נסיעה</h4>
+              <div className="form-group" style={{marginBottom: "1.5rem"}}>
+                <label>שיוך לערוץ</label>
+                <Select value={formData.channel_id} onValueChange={(value) => handleChange('channel_id', value)}>
+                  <SelectTrigger><SelectValue placeholder="בחר ערוץ..." /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all_channels">כל הערוצים</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
               <div className="form-grid">
                 <div className="form-group">
                   <label>סוג שירות</label>
