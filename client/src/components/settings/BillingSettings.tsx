@@ -1,132 +1,119 @@
-import React, { useState } from 'react';
-import { Input } from '@/components/ui/input';
+import React from 'react';
+import { CreditCard, DollarSign } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Pencil, Search } from 'lucide-react';
-
-const channelData = [
-    { id: 1, number: '655', fee: '158.5' },
-    { id: 2, number: '656', fee: '160.0' },
-    { id: 3, number: '657', fee: '155.0' },
-    { id: 4, number: '658', fee: '170.0' },
-];
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 export default function BillingSettings() {
-    const [formData, setFormData] = useState({
-        fixed_payment: '',
-        premium_payment: '',
-        fixed_premium: '',
-        trip_percentage: ''
-    });
-
-    const handleChange = (field: string, value: string) => {
-        setFormData(prev => ({ ...prev, [field]: value }));
-    };
-
-    return (
-        <div className="flex flex-col gap-6">
-            <style>{`
-                .settings-card { background-color: #fff; border: 1px solid #e9ecef; border-radius: 8px; padding: 1.5rem; }
-                .settings-card h3 { font-weight: 500; margin: 0 0 1.5rem 0; font-size: 1.125rem;}
-                .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem 2rem; }
-                .form-group { display: flex; flex-direction: column; gap: 0.5rem; }
-                .form-group label { font-size: 0.9rem; color: #6c757d; }
-                .input-with-icon { position: relative; }
-                .input-with-icon .icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #6c757d; pointer-events: none;}
-                .settings-content input { background-color: #f8f9fa; border: 1px solid #e9ecef; border-radius: 6px; padding: 0.7rem; width: 100%; box-sizing: border-box; }
-                
-                .card-actions { margin-top: 1.5rem; display: flex; justify-content: flex-end; }
-                .btn-add-field { background-color: #fef8e7; border: 1px solid #f0dca4; color: #212529; font-weight: 700; padding: 0.7rem 1.5rem; border-radius: 8px; }
-                .btn-add-field:hover { background-color: #fff3cd; }
-
-                .search-bar { position: relative; margin-bottom: 1.5rem; }
-                .search-bar .icon-search { position: absolute; right: 1rem; top: 50%; transform: translateY(-50%); color: #6c757d; }
-                .search-bar input { padding-right: 2.5rem !important; }
-
-                .channel-cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1rem; }
-                .channel-card {
-                    background-color: #f8f9fa;
-                    border: 1px solid #e9ecef;
-                    border-right: 4px solid #fdd85d;
-                    border-radius: 6px;
-                    padding: 1rem;
-                    display: flex;
-                    flex-direction: column;
-                    gap: 0.5rem;
-                }
-                .channel-card span { font-size: 0.9rem; color: #6c757d; }
-                .channel-card strong { font-weight: 500; font-size: 1.1rem; }
-            `}</style>
-
-            <div className="settings-card">
-                <h3>תשלומים קבועים</h3>
-                <div className="form-grid">
-                    <div className="form-group">
-                        <label>תשלום דמי חבר קבוע</label>
-                        <div className="input-with-icon">
-                            <Input 
-                                value={formData.fixed_payment}
-                                onChange={(e) => handleChange('fixed_payment', e.target.value)}
-                            />
-                            <Pencil size={16} className="icon" />
-                        </div>
-                    </div>
-                    <div className="form-group">
-                        <label>תשלומי אחדים</label>
-                        <div className="input-with-icon">
-                            <Input 
-                                value={formData.premium_payment}
-                                onChange={(e) => handleChange('premium_payment', e.target.value)}
-                            />
-                            <Pencil size={16} className="icon" />
-                        </div>
-                    </div>
-                </div>
+  return (
+    <div className="bg-white rounded-lg border border-gray-200 p-6">
+      <style>{`
+        .billing-settings h3 {
+          font-weight: 500;
+          margin-bottom: 1.5rem;
+          color: #1f2937;
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+        }
+        .billing-form {
+          display: grid;
+          gap: 1.5rem;
+        }
+        .form-row {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 1rem;
+        }
+        .form-group {
+          display: flex;
+          flex-direction: column;
+          gap: 0.5rem;
+        }
+        .form-group label {
+          font-weight: 500;
+          color: #374151;
+        }
+        .billing-actions {
+          display: flex;
+          gap: 1rem;
+          justify-content: flex-start;
+          margin-top: 1.5rem;
+        }
+        .btn-billing {
+          background-color: #fef8e7;
+          border: 1px solid #f0dca4;
+          color: #1f2937;
+          font-weight: 500;
+          padding: 0.6rem 1.2rem;
+          border-radius: 6px;
+          cursor: pointer;
+        }
+        .btn-billing:hover {
+          background-color: #fff3cd;
+        }
+      `}</style>
+      
+      <div className="billing-settings">
+        <h3>
+          <CreditCard size={20} />
+          הגדרות חיוב
+        </h3>
+        
+        <div className="billing-form">
+          <div className="form-row">
+            <div className="form-group">
+              <label>אחוז עמלה</label>
+              <Input type="number" placeholder="15" />
             </div>
-
-            <div className="settings-card">
-                <h3>תשלום פרמיות</h3>
-                <div className="form-grid">
-                    <div className="form-group">
-                        <label>תשלום קבוע</label>
-                        <div className="input-with-icon">
-                            <Input 
-                                value={formData.fixed_premium}
-                                onChange={(e) => handleChange('fixed_premium', e.target.value)}
-                            />
-                            <Pencil size={16} className="icon" />
-                        </div>
-                    </div>
-                    <div className="form-group">
-                        <label>אחוזי נסיעות</label>
-                        <div className="input-with-icon">
-                            <Input 
-                                value={formData.trip_percentage}
-                                onChange={(e) => handleChange('trip_percentage', e.target.value)}
-                            />
-                            <Pencil size={16} className="icon" />
-                        </div>
-                    </div>
-                </div>
-                <div className="card-actions">
-                    <Button className="btn-add-field">שדה תשלום חדש</Button>
-                </div>
+            <div className="form-group">
+              <label>מטבע</label>
+              <Select>
+                <SelectTrigger>
+                  <SelectValue placeholder="בחר מטבע" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ils">שקל (₪)</SelectItem>
+                  <SelectItem value="usd">דולר ($)</SelectItem>
+                  <SelectItem value="eur">יורו (€)</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-
-            <div className="settings-card">
-                <h3>תשלומים לפי ערוץ</h3>
-                <div className="search-bar">
-                    <Input placeholder="חיפוש ערוץ..." />
-                    <Search size={16} className="icon-search" />
-                </div>
-                <div className="channel-cards-grid">
-                    {channelData.map(channel => (
-                        <div key={channel.id} className="channel-card">
-                            <span>ערוץ {channel.number}</span>
-                            <strong>₪{channel.fee}</strong>
-                        </div>
-                    ))}
-                </div>
+          </div>
+          
+          <div className="form-row">
+            <div className="form-group">
+              <label>תאריך חיוב חודשי</label>
+              <Input type="number" placeholder="1" min="1" max="28" />
             </div>
+            <div className="form-group">
+              <label>שיטת תשלום</label>
+              <Select>
+                <SelectTrigger>
+                  <SelectValue placeholder="בחר שיטת תשלום" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="bank">העברה בנקאית</SelectItem>
+                  <SelectItem value="credit">כרטיס אשראי</SelectItem>
+                  <SelectItem value="check">המחאה</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          
+          <div className="form-group">
+            <label>הערות נוספות</label>
+            <Input placeholder="הערות לגבי החיוב..." />
+          </div>
         </div>
-    );
+        
+        <div className="billing-actions">
+          <button className="btn-billing">
+            <DollarSign size={16} />
+            עדכן הגדרות חיוב
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 }

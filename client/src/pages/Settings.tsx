@@ -1,196 +1,181 @@
-import React from 'react';
-import { Pencil, CalendarDays, Image } from 'lucide-react';
+import React, { useState } from 'react';
+import {
+    RefreshCw, CreditCard, UserCog, PlusCircle, Home, Users, Building2, Megaphone
+} from 'lucide-react';
 import TopActionsBar from '@/components/common/TopActionsBar';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
-import { Checkbox } from '@/components/ui/checkbox';
+import BillingSettings from '@/components/settings/BillingSettings';
+import DispatcherSettings from '@/components/settings/DispatcherSettings';
+import ChannelSettings from '@/components/settings/ChannelSettings';
+
+const settingsNavItems = [
+    {
+        group: 'מנהל התחנה',
+        items: [
+            { id: 'shortcuts', label: 'קיצורים', icon: RefreshCw },
+            { id: 'billing', label: 'הגדרת חיוב', icon: CreditCard },
+            { id: 'dispatchers', label: 'מוקדנים', icon: UserCog },
+            { id: 'channels', label: 'ערוצים', icon: PlusCircle },
+        ]
+    }
+];
+
+const shortcutsData = [
+    { icon: Megaphone, label: 'כל המכרזים', keys: ['Ctrl', 'A'] },
+    { icon: Users, label: 'נהגים', keys: ['Ctrl', 'B'] },
+    { icon: CreditCard, label: 'תשלומים', keys: ['Ctrl', 'C'] },
+    { icon: Home, label: 'נסיעות', keys: ['Ctrl', 'D'] },
+    { icon: PlusCircle, label: 'לקוחות', keys: ['Ctrl', 'E'] },
+    { icon: Building2, label: 'מחירון כללי', keys: ['Ctrl', 'F'] },
+];
+
+const SettingsContent = ({ activeView }: { activeView: string }) => {
+    if (activeView === 'shortcuts') {
+        return (
+            <div className="settings-content">
+                <h3>קיצורים נפוצים</h3>
+                <div className="shortcuts-list">
+                    {shortcutsData.map((shortcut, index) => (
+                        <div key={index} className="shortcut-item">
+                            <shortcut.icon className="text-gray-500" size={20} />
+                            <span>{shortcut.label}</span>
+                            <div className="shortcut-keys">
+                                {shortcut.keys.map(key => <kbd key={key}>{key}</kbd>)}
+                            </div>
+                        </div>
+                    ))}
+                </div>
+                <Button className="btn-create-shortcut">יצירת קיצור חדש</Button>
+            </div>
+        );
+    }
+    if (activeView === 'billing') {
+        return (
+            <div className="settings-content">
+                <BillingSettings />
+            </div>
+        );
+    }
+    if (activeView === 'dispatchers') {
+        return (
+            <div className="settings-content">
+                <DispatcherSettings />
+            </div>
+        );
+    }
+    if (activeView === 'channels') {
+        return (
+            <div className="settings-content">
+                <ChannelSettings />
+            </div>
+        );
+    }
+    // Placeholder for other views
+    return <div className="settings-content"><p>תוכן עבור {activeView}</p></div>;
+};
 
 export default function Settings() {
+    const [activeView, setActiveView] = useState('shortcuts');
+
     return (
-        <div className="page-container">
+        <div className="p-8 bg-gray-50 min-h-screen">
+            <style>{`
+                .settings-page h2 { font-weight: 500; font-size: 1.8rem; margin-bottom: 1.5rem; color: #374151; }
+                .settings-layout { display: flex; gap: 2rem; align-items: flex-start; }
+                .settings-nav {
+                    flex: 0 0 250px;
+                    background-color: #fff;
+                    border-radius: 8px;
+                    padding: 1.5rem 1rem;
+                    border: 1px solid #e9ecef;
+                }
+                .nav-group { margin-bottom: 1.5rem; }
+                .nav-group:last-child { margin-bottom: 0; }
+                .nav-group h5 { font-weight: 500; margin: 0 0 1rem 0; padding-right: 0.5rem; color: #344054; }
+                .settings-nav ul { list-style: none; padding: 0; margin: 0; }
+                .settings-nav button {
+                    display: flex;
+                    width: 100%;
+                    align-items: center;
+                    gap: 0.75rem;
+                    padding: 0.75rem 1rem;
+                    border-radius: 6px;
+                    text-decoration: none;
+                    color: #6b7280;
+                    font-weight: 500;
+                    transition: background-color 0.2s;
+                    background: none;
+                    border: none;
+                    text-align: right;
+                    cursor: pointer;
+                }
+                .settings-nav button:hover { background-color: #f9fafb; }
+                .settings-nav button.active { background-color: #f9fafb; color: #1f2937; }
+                .settings-nav button .icon { width: 20px; text-align: center; }
+                .settings-content { flex: 1; }
+                .settings-content h3 { font-weight: 500; margin-top: 0; margin-bottom: 1.5rem; color: #1f2937; }
+                .shortcuts-list {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 1rem;
+                    margin-bottom: 1.5rem;
+                }
+                .shortcut-item {
+                    display: flex;
+                    align-items: center;
+                    gap: 1rem;
+                    background-color: #fff;
+                    border: 1px solid #e9ecef;
+                    border-radius: 8px;
+                    padding: 0.75rem 1.5rem;
+                }
+                .shortcut-item span { margin-left: auto; font-weight: 500; }
+                .shortcut-keys { display: flex; gap: 0.5rem; }
+                .shortcut-keys kbd {
+                    background-color: #f9fafb;
+                    border: 1px solid #d1d5db;
+                    border-radius: 4px;
+                    padding: 0.2rem 0.6rem;
+                    font-family: monospace;
+                    font-size: 0.85rem;
+                    color: #6b7280;
+                }
+                .btn-create-shortcut {
+                    background-color: #fef8e7;
+                    border: 1px solid #f0dca4;
+                    color: #1f2937;
+                    font-weight: 700;
+                    padding: 0.7rem 1.5rem;
+                }
+                .btn-create-shortcut:hover {
+                    background-color: #fff3cd;
+                }
+            `}</style>
             <TopActionsBar />
             <section className="settings-page">
                 <h2>הגדרות</h2>
-                <nav className="tab-navigation">
-                    <a href="#" className="tab-link active">הגדרות העסק</a>
-                </nav>
-
-                <div className="settings-card">
-                    <h3>פרטי מנהל תחנה</h3>
-                    <div className="form-grid">
-                        <div className="form-group">
-                            <label>שם פרטי</label>
-                            <div className="input-with-icon">
-                                <Input type="text" />
-                                <Pencil size={16} className="icon-override" />
+                <div className="settings-layout">
+                    <nav className="settings-nav">
+                        {settingsNavItems.map(group => (
+                            <div key={group.group} className="nav-group">
+                                <h5>{group.group}</h5>
+                                <ul>
+                                    {group.items.map(item => (
+                                        <li key={item.id}>
+                                            <button 
+                                                className={activeView === item.id ? 'active' : ''}
+                                                onClick={() => setActiveView(item.id)}
+                                            >
+                                                <item.icon size={18} className="icon" />
+                                                {item.label}
+                                            </button>
+                                        </li>
+                                    ))}
+                                </ul>
                             </div>
-                        </div>
-                        <div className="form-group">
-                            <label>שם משפחה</label>
-                            <div className="input-with-icon">
-                                <Input type="text" />
-                                <Pencil size={16} className="icon-override" />
-                            </div>
-                        </div>
-                        <div className="form-group">
-                            <label>מספר זהות</label>
-                            <div className="input-with-icon">
-                                <Input type="text" />
-                                <Pencil size={16} className="icon-override" />
-                            </div>
-                        </div>
-                        <div className="form-group">
-                            <label>תאריך לידה</label>
-                            <div className="input-with-icon">
-                                <Input type="text" />
-                                <Pencil size={16} className="icon-override" />
-                            </div>
-                        </div>
-                        <div className="form-group">
-                            <label>טלפון ליצירת קשר</label>
-                            <div className="input-with-icon">
-                                <Input type="text" />
-                                <Pencil size={16} className="icon-override" />
-                            </div>
-                        </div>
-                        <div className="form-group">
-                            <label>שם משתמש</label>
-                            <div className="input-with-icon">
-                                <Input type="text" />
-                                <Pencil size={16} className="icon-override" />
-                            </div>
-                        </div>
-                        <div className="form-group date-field">
-                            <label>תאריך הצטרפות למערכת: 01.01.2026</label>
-                            <div className="input-with-icon">
-                                <Input type="text" disabled />
-                                <CalendarDays size={16} className="icon-override" />
-                            </div>
-                        </div>
-                    </div>
-                    <div className="card-actions">
-                        <button className="btn-action">עדכן פרטים</button>
-                    </div>
-                </div>
-
-                <div className="settings-card">
-                    <h3>עדכון סיסמת כניסה</h3>
-                    <div className="form-grid">
-                        <div className="form-group">
-                            <label>סיסמה נוכחית</label>
-                            <div className="input-with-icon">
-                                <Input type="password" />
-                                <Pencil size={16} className="icon-override" />
-                            </div>
-                        </div>
-                        <div className="form-group">
-                            <label>סיסמה חדשה <span className="label-info">8-16 תווים</span></label>
-                            <div className="input-with-icon">
-                                <Input type="password" />
-                                <Pencil size={16} className="icon-override" />
-                            </div>
-                        </div>
-                        <div className="form-group">
-                            <label>אישור סיסמה <span className="label-info">8-16 תווים, זהים לסיסמה החדשה</span></label>
-                            <div className="input-with-icon">
-                                <Input type="password" />
-                                <Pencil size={16} className="icon-override" />
-                            </div>
-                        </div>
-                    </div>
-                    <div className="checkbox-group">
-                        <Checkbox id="forgot-password" />
-                        <label htmlFor="forgot-password">שכחתי סיסמה</label>
-                    </div>
-                    <div className="card-actions">
-                        <button className="btn-action">שלחו לי קישור להתחברות</button>
-                        <button className="btn-action">עדכן סיסמה</button>
-                    </div>
-                </div>
-
-                <div className="settings-card">
-                    <h3>אימות דו שלבי בכניסה לחשבון</h3>
-                    <label className="toggle-switch-label">
-                        <span className="toggle-info">אימות דו שלבי, מגביר את אבטחת החשבון שלך. כשהאימות מופעל, תתבקש להזין סיסמה וגם קוד אימות שישלח אליך</span>
-                        <Switch />
-                    </label>
-                </div>
-                
-                <div className="settings-card">
-                    <h3>פרטי תחנה</h3>
-                    <div className="form-grid-complex">
-                        <div className="form-inputs">
-                            <div className="form-group">
-                                <label>שם התחנה</label>
-                                <div className="input-with-icon">
-                                    <Input type="text" />
-                                    <Pencil size={16} className="icon-override" />
-                                </div>
-                            </div>
-                            <div className="form-group">
-                                <label>ח.פ / ת.ז</label>
-                                <div className="input-with-icon">
-                                    <Input type="text" />
-                                    <Pencil size={16} className="icon-override" />
-                                </div>
-                            </div>
-                            <div className="form-group">
-                                <label>תאור</label>
-                                <div className="input-with-icon">
-                                    <Input type="text" />
-                                    <Pencil size={16} className="icon-override" />
-                                </div>
-                            </div>
-                            <div className="form-group">
-                                <label>מיקום</label>
-                                <div className="input-with-icon">
-                                    <Input type="text" />
-                                    <Pencil size={16} className="icon-override" />
-                                </div>
-                            </div>
-                        </div>
-                        <div className="form-group uploader-group">
-                            <label>לוגו החברה</label>
-                            <div className="image-uploader">
-                                <Image size={48} className="icon-img" />
-                            </div>
-                        </div>
-                    </div>
-                    <div className="card-actions">
-                        <button className="btn-action">עדכן פרטים</button>
-                    </div>
-                </div>
-
-                <div className="settings-card">
-                    <h3>שליחת דוחות</h3>
-                    <div className="form-grid">
-                        <div className="form-group">
-                            <label>בחירת ערוץ</label>
-                            <Select>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="בחר ערוץ" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="email">אימייל</SelectItem>
-                                    <SelectItem value="sms">SMS</SelectItem>
-                                    <SelectItem value="whatsapp">WhatsApp</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div className="form-group">
-                            <label>תאריך לשליחת דוח חודשי</label>
-                            <div className="input-with-icon">
-                                <Input type="text" defaultValue="15/06/2023" />
-                                <CalendarDays size={16} className="icon-override" />
-                            </div>
-                        </div>
-                    </div>
-                    <div className="card-actions">
-                        <button className="btn-action-secondary">הוספת ערוץ לשליחה</button>
-                        <button className="btn-action">אישור</button>
-                    </div>
+                        ))}
+                    </nav>
+                    <SettingsContent activeView={activeView} />
                 </div>
             </section>
         </div>
