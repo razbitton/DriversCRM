@@ -1,234 +1,92 @@
 import React, { useState } from 'react';
-import { PlusCircle, Settings, Trash2, Edit, Radio } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { Switch } from '@/components/ui/switch';
-
-interface Channel {
-  id: number;
-  name: string;
-  type: 'radio' | 'whatsapp' | 'telegram';
-  frequency: string;
-  isActive: boolean;
-  description: string;
-}
-
-const mockChannels: Channel[] = [
-  { id: 1, name: 'ערוץ ראשי', type: 'radio', frequency: '87.5 FM', isActive: true, description: 'ערוץ תקשורת ראשי עם הנהגים' },
-  { id: 2, name: 'WhatsApp Business', type: 'whatsapp', frequency: 'API', isActive: true, description: 'קבוצת WhatsApp לנהגים' },
-  { id: 3, name: 'Telegram Channel', type: 'telegram', frequency: 'Bot API', isActive: false, description: 'ערוץ Telegram לעדכונים' },
-];
+import { Button } from '@/components/ui/button';
+import { Pencil } from 'lucide-react';
 
 export default function ChannelSettings() {
-  const [channels, setChannels] = useState<Channel[]>(mockChannels);
+    const [formData, setFormData] = useState({
+        channel_name: '',
+        channel_nickname: '',
+        channel_id_number: '',
+        fixed_price: '',
+        variable_price: ''
+    });
 
-  const getChannelIcon = (type: string) => {
-    switch (type) {
-      case 'radio': return <Radio size={16} />;
-      case 'whatsapp': return <span className="text-green-600">📱</span>;
-      case 'telegram': return <span className="text-blue-600">✈️</span>;
-      default: return <Settings size={16} />;
-    }
-  };
+    const handleChange = (field: string, value: string) => {
+        setFormData(prev => ({ ...prev, [field]: value }));
+    };
 
-  const getChannelTypeLabel = (type: string) => {
-    switch (type) {
-      case 'radio': return 'רדיו';
-      case 'whatsapp': return 'WhatsApp';
-      case 'telegram': return 'Telegram';
-      default: return type;
-    }
-  };
+    const handleSubmit = async () => {
+        try {
+            // await Channel.create(formData);
+            alert('ערוץ חדש נוצר בהצלחה!');
+            // Here you might want to clear the form or give other feedback
+        } catch (error) {
+            console.error('Error creating channel:', error);
+            alert('שגיאה ביצירת הערוץ.');
+        }
+    };
 
-  return (
-    <div className="bg-white rounded-lg border border-gray-200 p-6">
-      <style>{`
-        .channel-settings h3 {
-          font-weight: 500;
-          margin-bottom: 1.5rem;
-          color: #1f2937;
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-        }
-        .channel-actions {
-          display: flex;
-          gap: 1rem;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 1.5rem;
-        }
-        .channel-stats {
-          display: flex;
-          gap: 2rem;
-          align-items: center;
-        }
-        .stat-item {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-          font-size: 0.875rem;
-          color: #6b7280;
-        }
-        .channel-grid {
-          display: grid;
-          gap: 1rem;
-        }
-        .channel-card {
-          border: 1px solid #e5e7eb;
-          border-radius: 8px;
-          padding: 1.5rem;
-          transition: all 0.2s;
-        }
-        .channel-card:hover {
-          border-color: #d1d5db;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-        }
-        .channel-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: flex-start;
-          margin-bottom: 1rem;
-        }
-        .channel-info {
-          display: flex;
-          flex-direction: column;
-          gap: 0.5rem;
-        }
-        .channel-name {
-          font-weight: 600;
-          color: #1f2937;
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-        }
-        .channel-meta {
-          display: flex;
-          gap: 1rem;
-          align-items: center;
-          font-size: 0.875rem;
-          color: #6b7280;
-        }
-        .channel-description {
-          color: #6b7280;
-          font-size: 0.875rem;
-          margin-bottom: 1rem;
-        }
-        .channel-controls {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-        }
-        .channel-actions-row {
-          display: flex;
-          gap: 0.5rem;
-        }
-        .btn-icon {
-          background: #fef8e7;
-          border: 1px solid #f0dca4;
-          color: #a8842c;
-          width: 32px;
-          height: 32px;
-          border-radius: 4px;
-          cursor: pointer;
-          display: flex;
-          justify-content: center;
-          align-items: center;
-        }
-        .btn-icon:hover {
-          background-color: #fff3cd;
-        }
-        .btn-add-channel {
-          background-color: #fef8e7;
-          border: 1px solid #f0dca4;
-          color: #1f2937;
-          font-weight: 500;
-          padding: 0.6rem 1.2rem;
-          border-radius: 6px;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-        }
-        .btn-add-channel:hover {
-          background-color: #fff3cd;
-        }
-        .toggle-control {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-        }
-      `}</style>
-      
-      <div className="channel-settings">
-        <h3>
-          <PlusCircle size={20} />
-          ניהול ערוצי תקשורת
-        </h3>
-        
-        <div className="channel-actions">
-          <div className="channel-stats">
-            <div className="stat-item">
-              <Radio size={16} />
-              <span>{channels.filter(c => c.isActive).length} ערוצים פעילים</span>
+    return (
+        <div className="flex flex-col gap-6">
+            <style>{`
+                .settings-card { background-color: #fff; border: 1px solid #e9ecef; border-radius: 8px; padding: 1.5rem; }
+                .settings-card h3 { font-weight: 500; margin: 0 0 1.5rem 0; font-size: 1.125rem; }
+                .form-grid-three-col { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1.5rem 2rem; }
+                .form-group { display: flex; flex-direction: column; gap: 0.5rem; }
+                .form-group label { font-size: 0.9rem; color: #6c757d; }
+                .label-info { font-size: 0.8rem; color: #6c757d; }
+                .input-with-icon { position: relative; }
+                .input-with-icon .icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #6c757d; pointer-events: none; }
+                .settings-content input { background-color: #f8f9fa; border: 1px solid #e9ecef; border-radius: 6px; padding: 0.7rem; width: 100%; box-sizing: border-box; }
+                .card-actions { margin-top: 1.5rem; display: flex; justify-content: flex-end; }
+                .btn-action { background-color: #fdd85d; border: none; padding: 0.7rem 1.5rem; font-weight: 700; border-radius: 8px; color: #212529; cursor: pointer; }
+                .btn-action:hover { background-color: #fce047; }
+            `}</style>
+
+            <div className="settings-card">
+                <h3>הוספת ערוץ חדש</h3>
+                <div className="form-grid-three-col">
+                    <div className="form-group">
+                        <label>שם הערוץ</label>
+                        <div className="input-with-icon">
+                            <Input value={formData.channel_name} onChange={(e) => handleChange('channel_name', e.target.value)} />
+                            <Pencil size={16} className="icon" />
+                        </div>
+                    </div>
+                    <div className="form-group">
+                        <label>כינוי הערוץ</label>
+                        <div className="input-with-icon">
+                            <Input value={formData.channel_nickname} onChange={(e) => handleChange('channel_nickname', e.target.value)} />
+                            <Pencil size={16} className="icon" />
+                        </div>
+                    </div>
+                    <div className="form-group">
+                        <label>מספר זיהוי הערוץ <span className="label-info">8-16 תווים</span></label>
+                        <div className="input-with-icon">
+                            <Input value={formData.channel_id_number} onChange={(e) => handleChange('channel_id_number', e.target.value)} />
+                            <Pencil size={16} className="icon" />
+                        </div>
+                    </div>
+                    <div className="form-group">
+                        <label>מחיר קבוע</label>
+                        <div className="input-with-icon">
+                            <Input value={formData.fixed_price} onChange={(e) => handleChange('fixed_price', e.target.value)} />
+                            <Pencil size={16} className="icon" />
+                        </div>
+                    </div>
+                    <div className="form-group">
+                        <label>מחיר משתנה</label>
+                        <div className="input-with-icon">
+                            <Input value={formData.variable_price} onChange={(e) => handleChange('variable_price', e.target.value)} />
+                            <Pencil size={16} className="icon" />
+                        </div>
+                    </div>
+                </div>
+                <div className="card-actions">
+                    <Button className="btn-action" onClick={handleSubmit}>צור ערוץ חדש</Button>
+                </div>
             </div>
-            <div className="stat-item">
-              <Settings size={16} />
-              <span>{channels.length} סה"כ ערוצים</span>
-            </div>
-          </div>
-          <button className="btn-add-channel">
-            <PlusCircle size={16} />
-            הוסף ערוץ חדש
-          </button>
         </div>
-        
-        <div className="channel-grid">
-          {channels.map((channel) => (
-            <div key={channel.id} className="channel-card">
-              <div className="channel-header">
-                <div className="channel-info">
-                  <div className="channel-name">
-                    {getChannelIcon(channel.type)}
-                    {channel.name}
-                  </div>
-                  <div className="channel-meta">
-                    <Badge variant="outline">
-                      {getChannelTypeLabel(channel.type)}
-                    </Badge>
-                    <span>{channel.frequency}</span>
-                  </div>
-                </div>
-                <Badge className={channel.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}>
-                  {channel.isActive ? 'פעיל' : 'לא פעיל'}
-                </Badge>
-              </div>
-              
-              <div className="channel-description">
-                {channel.description}
-              </div>
-              
-              <div className="channel-controls">
-                <div className="toggle-control">
-                  <Switch checked={channel.isActive} />
-                  <span className="text-sm text-gray-600">
-                    {channel.isActive ? 'מופעל' : 'כבוי'}
-                  </span>
-                </div>
-                <div className="channel-actions-row">
-                  <button className="btn-icon" title="עריכה">
-                    <Edit size={14} />
-                  </button>
-                  <button className="btn-icon" title="מחיקה">
-                    <Trash2 size={14} />
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
+    );
 }
