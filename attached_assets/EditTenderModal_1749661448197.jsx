@@ -1,0 +1,233 @@
+import React, { useState, useEffect } from 'react';
+import { Tender } from '@/entities/Tender';
+import { Driver } from '@/entities/Driver';
+import { Client } from '@/entities/Client';
+import { Channel } from '@/entities/Channel';
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
+import { Pencil, CircleDollarSign } from 'lucide-react';
+
+export default function EditTenderModal({ setOpen, onTenderUpdated, tender }) {
+  const [formData, setFormData] = useState({
+    channel_id: '',
+    service_type: '',
+    assigned_driver_id: '',
+    client_type: 'casual',
+    client_id: '',
+    contact_phone: '',
+    origin_address: '',
+    origin_city: '',
+    destination_address: '',
+    destination_city: '',
+    is_immediate: true,
+    price: '',
+    notes: '',
+  });
+  const [drivers, setDrivers] = useState([]);
+  const [clients, setClients] = useState([]);
+  const [channels, setChannels] = useState([]);
+  const [filteredClients, setFilteredClients] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setIsLoading(true);
+      const [driversData, clientsData, channelsData] = await Promise.all([
+        Driver.list(),
+        Client.list(),
+        Channel.list()
+      ]);
+      setDrivers(driversData);
+      setClients(clientsData);
+      setChannels(channelsData);
+      setIsLoading(false);
+    };
+    fetchData();
+  }, []);
+
+  useEffect(() => {
+    if (tender && !isLoading) {
+        const originParts = tender.origin ? tender.origin.split(',') : [''];
+        const origin_city = originParts.pop()?.trim() || '';
+        const origin_address = originParts.join(',').trim();
+
+        const destinationParts = tender.destination ? tender.destination.split(',') : [''];
+        const destination_city = destinationParts.pop()?.trim() || '';
+        const destination_address = destinationParts.join(',').trim();
+
+        const client = clients.find(c => c.id === tender.client_id) || clients.find(c => c.full_name === tender.client_name);
+        const client_type = client ? client.status : 'casual';
+        
+        setFormData({
+            channel_id: tender.channel_id || 'all_channels',
+            service_type: tender.service_type || 'ride',
+            assigned_driver_id: tender.assigned_driver_id || 'dispatcher',
+            client_type: client_type,
+            client_id: client?.id || '',
+            contact_phone: tender.contact_phone || '',
+            origin_address: origin_address,
+            origin_city: origin_city,
+            destination_address: destination_address,
+            destination_city: destination_city,
+            is_immediate: true, 
+            price: tender.estimated_price?.toString() || '',
+            notes: tender.notes || '',
+        });
+
+        setFilteredClients(clients.filter(c => c.status === client_type));
+    }
+  }, [tender, clients, isLoading]);
+  
+  const handleChange = (field, value) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+  
+  const handleClientTypeChange = (value) => {
+    handleChange('client_type', value);
+    handleChange('client_id', '');
+    handleChange('contact_phone', '');
+    setFilteredClients(clients.filter(c => c.status === value));
+  };
+  
+  const handleClientChange = (clientId) => {
+    const client = clients.find(c => c.id === clientId);
+    if (client) {
+        handleChange('client_id', clientId);
+        handleChange('contact_phone', client.phone);
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!formData.price) { alert('נא למלא סכום לתשלום'); return; }
+
+    const driver = drivers.find(d => d.id === formData.assigned_driver_id);
+    const client = clients.find(c => c.id === formData.client_id);
+
+    const tenderData = {
+        name: `${formData.origin_city} - ${formData.destination_city}`,
+        service_type: formData.service_type,
+        origin: `${formData.origin_address}, ${formData.origin_city}`,
+        destination: `${formData.destination_address}, ${formData.destination_city}`,
+        status: formData.assigned_driver_id && formData.assigned_driver_id !== 'dispatcher' ? 'taken' : 'available',
+        assigned_driver_id: driver?.id,
+        assigned_driver_name: driver?.full_name,
+        assigned_driver_phone: driver?.phone,
+        client_id: client?.id,
+        client_name: client?.full_name || 'לקוח מזדמן',
+        contact_phone: formData.contact_phone,
+        estimated_price: parseFloat(formData.price) || 0,
+        notes: formData.notes,
+        channel_id: formData.channel_id === 'all_channels' ? null : formData.channel_id,
+    };
+    
+    try {
+        await Tender.update(tender.id, tenderData);
+        if (onTenderUpdated) onTenderUpdated();
+    } catch(error) {
+        console.error("Failed to update tender:", error);
+    }
+  };
+
+  return (
+    <>
+      <style>{`
+        .modal-body-new-trip { padding: 1.5rem 2rem; overflow-y: auto; background-color: #f8f9fa; max-height: 75vh; }
+        .form-section { margin-bottom: 2rem; }
+        .form-section h4 { font-weight: 500; margin-top: 0; margin-bottom: 1rem; }
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+        .form-group { display: flex; flex-direction: column; gap: 0.5rem; }
+        .form-group.full-span { grid-column: 1 / -1; }
+        .form-group label { font-size: 0.9rem; color: #6c757d; }
+        .input-with-icon { position: relative; }
+        .input-with-icon .icon-override { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #9ca3af; }
+        .required-star { color: #dc3545; margin-left: 2px; }
+        .modal-footer { display: flex; justify-content: flex-end; padding: 1.5rem 2rem; border-top: 1px solid #e9ecef; background-color: #ffffff; }
+        .btn-submit-accent { background-color: #fdd85d; border: 1px solid #fdd85d; color: #212529; padding: 0.75rem 2rem; border-radius: 8px; font-weight: 700; cursor: pointer; transition: background-color 0.2s; }
+        .btn-submit-accent:hover { background-color: #fce588; }
+      `}</style>
+      <form onSubmit={handleSubmit}>
+        <div className="modal-body-new-trip">
+            <div className="form-section">
+              <h4>פרטי נסיעה</h4>
+              <div className="form-group" style={{marginBottom: "1.5rem"}}>
+                <label>שיוך לערוץ</label>
+                <Select value={formData.channel_id} onValueChange={(value) => handleChange('channel_id', value)}>
+                  <SelectTrigger><SelectValue placeholder="בחר ערוץ..." /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all_channels">כל הערוצים</SelectItem>
+                    {channels.map(c => <SelectItem key={c.id} value={c.id}>{c.channel_name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="form-grid">
+                <div className="form-group"><label>סוג שירות</label>
+                  <Select value={formData.service_type} onValueChange={value => handleChange('service_type', value)}>
+                    <SelectTrigger><SelectValue/></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="ride">הסעה</SelectItem>
+                      <SelectItem value="delivery">משלוח</SelectItem>
+                      <SelectItem value="special">מיוחד</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="form-group"><label>שיוך הנסיעה לנהג</label>
+                  <Select value={formData.assigned_driver_id} onValueChange={value => handleChange('assigned_driver_id', value)}>
+                    <SelectTrigger><SelectValue/></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="dispatcher">מוקדן</SelectItem>
+                      {drivers.map(d => <SelectItem key={d.id} value={d.id}>{d.full_name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+            
+            <div className="form-section">
+              {/* No H4 for client details as per outline */}
+              <div className="form-grid">
+                <div className="form-group"><label>סוג לקוח</label>
+                  <Select value={formData.client_type} onValueChange={handleClientTypeChange}>
+                    <SelectTrigger><SelectValue/></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="regular">קבוע</SelectItem>
+                      <SelectItem value="casual">מזדמן</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="form-group"><label>בחר לקוח</label>
+                  <Select disabled={formData.client_type === 'casual'} value={formData.client_id} onValueChange={handleClientChange}>
+                    <SelectTrigger><SelectValue placeholder="בחר לקוח..."/></SelectTrigger>
+                    <SelectContent><SelectItem value={null} disabled>בחר לקוח...</SelectItem>{filteredClients.map(c => <SelectItem key={c.id} value={c.id}>{c.full_name}</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
+                <div className="form-group full-span"><label>טלפון ליצירת קשר<span className="required-star">*</span></label><Input value={formData.contact_phone} onChange={e => handleChange('contact_phone', e.target.value)}/></div>
+              </div>
+            </div>
+            
+            <div className="form-section"><h4>מוצא ויעד</h4>
+              <div className="form-grid">
+                <div className="form-group"><label>כתובת מוצא<span className="required-star">*</span></label><Input value={formData.origin_address} onChange={e => handleChange('origin_address', e.target.value)}/></div>
+                <div className="form-group"><label>עיר מוצא<span className="required-star">*</span></label><Input value={formData.origin_city} onChange={e => handleChange('origin_city', e.target.value)}/></div>
+                <div className="form-group"><label>כתובת יעד<span className="required-star">*</span></label><Input value={formData.destination_address} onChange={e => handleChange('destination_address', e.target.value)}/></div>
+                <div className="form-group"><label>עיר יעד<span className="required-star">*</span></label><Input value={formData.destination_city} onChange={e => handleChange('destination_city', e.target.value)}/></div>
+              </div>
+            </div>
+            <div className="form-section"><h4>פרטים נוספים</h4>
+                <div className="form-group">
+                  <div style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
+                    <label>נסיעה מיידית</label><Switch checked={formData.is_immediate} onCheckedChange={checked => handleChange('is_immediate', checked)}/>
+                  </div>
+                </div>
+                <div className="form-group"><label>סכום לתשלום<span className="required-star">*</span></label><div className="input-with-icon"><Input type="number" value={formData.price} onChange={e => handleChange('price', e.target.value)}/><CircleDollarSign size={16} className="icon-override"/></div></div>
+                <div className="form-group"><label>הערות</label><div className="input-with-icon"><Textarea value={formData.notes} onChange={e => handleChange('notes', e.target.value)}/><Pencil size={16} className="icon-override"/></div></div>
+            </div>
+        </div>
+        <footer className="modal-footer"><button type="submit" className="btn-submit-accent">עדכון מכרז</button></footer>
+      </form>
+    </>
+  );
+}
