@@ -1,8 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { ChevronDown, X } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
-import { useQuery } from '@tanstack/react-query';
-import type { Driver } from '@shared/schema';
+import { ChevronDown } from 'lucide-react';
+
+interface Driver {
+  id: number;
+  full_name: string;
+  phone: string;
+  residence_area?: string;
+  id_number?: string;
+}
 
 interface DriverSelectorProps {
   onDriversChange: (drivers: Driver[]) => void;
@@ -11,13 +16,14 @@ interface DriverSelectorProps {
 
 export default function DriverSelector({ onDriversChange, selectedDrivers = [] }: DriverSelectorProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [drivers, setDrivers] = useState<Driver[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredDrivers, setFilteredDrivers] = useState<Driver[]>([]);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const { data: drivers = [] } = useQuery<Driver[]>({
-    queryKey: ['/api/drivers'],
-  });
+  useEffect(() => {
+    loadDrivers();
+  }, []);
 
   useEffect(() => {
     filterDrivers();
@@ -33,13 +39,28 @@ export default function DriverSelector({ onDriversChange, selectedDrivers = [] }
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  const loadDrivers = async () => {
+    try {
+      // Mock data for now - in real app this would be an API call
+      const mockDrivers = [
+        { id: 1, full_name: 'יוסי כהן', phone: '050-1234567', residence_area: 'ירושלים', id_number: '123456789' },
+        { id: 2, full_name: 'משה לוי', phone: '052-9876543', residence_area: 'תל אביב', id_number: '987654321' },
+        { id: 3, full_name: 'דוד שמיר', phone: '054-5555555', residence_area: 'חיפה', id_number: '555555555' },
+      ];
+      setDrivers(mockDrivers);
+      setFilteredDrivers(mockDrivers);
+    } catch (error) {
+      console.error("Error loading drivers:", error);
+    }
+  };
+
   const filterDrivers = () => {
     if (!searchTerm) {
       setFilteredDrivers(drivers);
       return;
     }
     
-    const filtered = drivers.filter((driver) =>
+    const filtered = drivers.filter(driver =>
       driver.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       driver.phone?.includes(searchTerm) ||
       driver.id_number?.includes(searchTerm)
@@ -68,8 +89,10 @@ export default function DriverSelector({ onDriversChange, selectedDrivers = [] }
 
     let newSelected;
     if (allAreSelected) {
+      // Deselect all currently filtered drivers
       newSelected = selectedDrivers.filter(d => !allFilteredIds.has(d.id));
     } else {
+      // Select all filtered drivers that are not already selected
       const newDriversToAdd = filteredDrivers.filter(d => !selectedIds.has(d.id));
       newSelected = [...selectedDrivers, ...newDriversToAdd];
     }
@@ -77,7 +100,7 @@ export default function DriverSelector({ onDriversChange, selectedDrivers = [] }
   };
 
   const getDisplayText = () => {
-    if (selectedDrivers.length === 0) return 'בחר נהגים';
+    if (selectedDrivers.length === 0) return 'בחר';
     if (selectedDrivers.length === 1) return selectedDrivers[0].full_name;
     return `${selectedDrivers.length} נהגים נבחרו`;
   };
@@ -163,27 +186,19 @@ export default function DriverSelector({ onDriversChange, selectedDrivers = [] }
         
         .driver-name {
           font-weight: 500;
-          color: #1f2937;
+          font-size: 14px;
         }
         
-        .driver-phone {
+        .driver-details {
           font-size: 12px;
           color: #6b7280;
         }
         
-        .select-all-item {
-          padding: 10px 12px;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          border-bottom: 2px solid #e5e7eb;
-          background-color: #f9fafb;
-          font-weight: 500;
-        }
-        
-        .select-all-item:hover {
-          background-color: #f3f4f6;
+        .no-results {
+          padding: 20px;
+          text-align: center;
+          color: #6b7280;
+          font-size: 14px;
         }
       `}</style>
       
@@ -205,32 +220,42 @@ export default function DriverSelector({ onDriversChange, selectedDrivers = [] }
           </div>
           
           <div className="driver-list">
-            <div className="select-all-item" onClick={handleSelectAll}>
-              <span>{areAllFilteredSelected ? 'בטל בחירת הכל' : 'בחר הכל'}</span>
-              <input
-                type="checkbox"
-                checked={areAllFilteredSelected}
-                readOnly
-              />
+             <div
+              className={`driver-item ${areAllFilteredSelected ? 'selected' : ''}`}
+              onClick={handleSelectAll}
+            >
+              <div className="driver-name">כל הנהגים</div>
+              {areAllFilteredSelected && (
+                <div className="text-yellow-600">✓</div>
+              )}
             </div>
-            
-            {filteredDrivers.map((driver) => (
-              <div
-                key={driver.id}
-                className={`driver-item ${selectedDrivers.some(d => d.id === driver.id) ? 'selected' : ''}`}
-                onClick={() => handleDriverSelect(driver)}
-              >
-                <div className="driver-info">
-                  <span className="driver-name">{driver.full_name}</span>
-                  <span className="driver-phone">{driver.phone}</span>
+
+            {filteredDrivers.map(driver => {
+              const isSelected = selectedDrivers.some(d => d.id === driver.id);
+              return (
+                <div
+                  key={driver.id}
+                  className={`driver-item ${isSelected ? 'selected' : ''}`}
+                  onClick={() => handleDriverSelect(driver)}
+                >
+                  <div className="driver-info">
+                    <div className="driver-name">{driver.full_name}</div>
+                    <div className="driver-details">
+                      {driver.phone} | {driver.residence_area || 'לא צוין'}
+                    </div>
+                  </div>
+                  {isSelected && (
+                    <div className="text-yellow-600">✓</div>
+                  )}
                 </div>
-                <input
-                  type="checkbox"
-                  checked={selectedDrivers.some(d => d.id === driver.id)}
-                  readOnly
-                />
-              </div>
-            ))}
+              );
+            })}
+            
+            {filteredDrivers.length === 0 && (
+                 <div className="no-results">
+                    לא נמצאו נהגים
+                  </div>
+            )}
           </div>
         </div>
       )}
