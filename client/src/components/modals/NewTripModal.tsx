@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Pencil, CircleDollarSign } from 'lucide-react';
 import { apiRequest } from "@/lib/queryClient";
-import type { Driver, Client, InsertTender } from '@shared/schema';
+import type { Driver, Client, InsertTrip } from '@shared/schema';
 
 export default function NewTripModal({ setOpen, onTripCreated }: {
   setOpen: (open: boolean) => void;
@@ -45,12 +45,12 @@ export default function NewTripModal({ setOpen, onTripCreated }: {
     queryKey: ['/api/clients'],
   });
 
-  const createTenderMutation = useMutation({
-    mutationFn: async (data: InsertTender) => {
-      return await apiRequest("/api/tenders", "POST", data);
+  const createTripMutation = useMutation({
+    mutationFn: async (data: InsertTrip) => {
+      return await apiRequest("/api/trips", "POST", data);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/tenders"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/trips"] });
       onTripCreated?.();
       setOpen(false);
     },
@@ -103,23 +103,23 @@ export default function NewTripModal({ setOpen, onTripCreated }: {
     const driver = drivers.find(d => d.id.toString() === formData.assigned_driver_id);
     const client = clients.find(c => c.id.toString() === formData.client_id);
 
-    const tenderData: InsertTender = {
-        tender_number: `TD${Date.now()}`,
+    const tripData: InsertTrip = {
+        trip_number: `TR${Date.now()}`,
         origin: `${formData.origin_address}, ${formData.origin_city}`,
         destination: `${formData.destination_address}, ${formData.destination_city}`,
         client_name: client?.full_name || 'לקוח מזדמן',
         client_phone: formData.contact_phone,
-        service_type: formData.service_type as any,
-        status: formData.assigned_driver_id && formData.assigned_driver_id !== 'dispatcher' ? 'waiting' : 'active',
-        scheduled_time: formData.is_immediate ? null : new Date(),
+        trip_type: formData.service_type as any,
+        status: formData.assigned_driver_id && formData.assigned_driver_id !== 'dispatcher' ? 'taken' : 'scheduled',
+        scheduled_time: new Date(),
         driver_id: driver?.id || null,
         notes: formData.notes || null,
     };
     
     try {
-        createTenderMutation.mutate(tenderData);
+        createTripMutation.mutate(tripData);
     } catch(error) {
-        console.error("Failed to create tender:", error);
+        console.error("Failed to create trip:", error);
     }
   };
 
@@ -379,8 +379,8 @@ export default function NewTripModal({ setOpen, onTripCreated }: {
 
           <footer className="modal-footer">
               <Button type="button" variant="outline" onClick={() => setOpen(false)} className="btn btn-cancel">ביטול</Button>
-              <Button type="submit" className="btn btn-save" disabled={createTenderMutation.isPending}>
-                {createTenderMutation.isPending ? "יוצר..." : "צור נסיעה חדשה"}
+              <Button type="submit" className="btn btn-save" disabled={createTripMutation.isPending}>
+                {createTripMutation.isPending ? "יוצר..." : "צור נסיעה חדשה"}
               </Button>
           </footer>
         </form>
