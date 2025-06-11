@@ -1,129 +1,136 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import TopActionsBar from "@/components/common/TopActionsBar";
-import ClientTable from "@/components/clients/ClientTable";
+import { Users } from "lucide-react"; 
+
 import ClientTabs from "@/components/clients/ClientTabs";
 import ClientToolbar from "@/components/clients/ClientToolbar";
-import ConfirmationModal from "@/components/common/ConfirmationModal";
-import NewClientModal from "@/components/modals/NewClientModal";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import ClientTable from "@/components/clients/ClientTable";
+import TopActionsBar from "@/components/common/TopActionsBar";
 import type { Client } from "@shared/schema";
 
 export default function Clients() {
-  const [isNewClientModalOpen, setIsNewClientModalOpen] = useState(false);
-  const [confirmModal, setConfirmModal] = useState<{
-    isOpen: boolean;
-    title: string;
-    message: string;
-    onConfirm: () => void;
-  }>({
-    isOpen: false,
-    title: "",
-    message: "",
-    onConfirm: () => {},
-  });
+  const [clients, setClients] = useState<Client[]>([]);
+  const [filteredClients, setFilteredClients] = useState<Client[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
 
   // Fetch clients
-  const { data: clients = [], isLoading, refetch } = useQuery<Client[]>({
+  const { data: fetchedClients = [], refetch } = useQuery<Client[]>({
     queryKey: ["/api/clients"],
   });
 
-  const handleRefresh = () => {
-    refetch();
+  useEffect(() => {
+    loadClients();
+  }, [fetchedClients]);
+
+  useEffect(() => {
+    applyFilters();
+  }, [clients, searchTerm]);
+
+  const loadClients = async () => {
+    try {
+      setClients(fetchedClients);
+    } catch (error) {
+      console.error("Error loading clients:", error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleClientCreated = () => {
-    handleRefresh();
+  const applyFilters = () => {
+    let filtered = clients.filter(client =>
+      client.full_name &&
+      client.phone &&
+      client.status
+    );
+
+    if (searchTerm) {
+      const lowerSearchTerm = searchTerm.toLowerCase();
+      filtered = filtered.filter(client => 
+        client.full_name?.toLowerCase().includes(lowerSearchTerm) ||
+        client.phone?.includes(lowerSearchTerm) ||
+        client.address?.toLowerCase().includes(lowerSearchTerm)
+      );
+    }
+
+    setFilteredClients(filtered);
+  };
+  
+  const handleSearch = (term: string) => {
+    setSearchTerm(term);
   };
 
-  const handleDeleteClient = (client: Client) => {
-    setConfirmModal({
-      isOpen: true,
-      title: "מחיקת לקוח",
-      message: `האם אתה בטוח שברצונך למחוק את הלקוח ${client.full_name}?`,
-      onConfirm: () => {
-        // TODO: Implement delete functionality
-        console.log("Deleting client:", client.id);
-        setConfirmModal(prev => ({ ...prev, isOpen: false }));
-      },
-    });
+  const handleDeleteClient = async (client: Client) => {
+    if (window.confirm(`האם אתה בטוח שברצונך למחוק את הלקוח ${client.full_name}?`)) {
+      try {
+        const response = await fetch(`/api/clients/${client.id}`, {
+          method: 'DELETE',
+        });
+        
+        if (response.ok) {
+          refetch();
+        }
+      } catch (error) {
+        console.error("Error deleting client:", error);
+      }
+    }
   };
 
   const handleViewClient = (client: Client) => {
     console.log("Viewing client:", client.id);
-    // TODO: Implement view functionality
+    // Handle view logic
   };
 
   const handleShowClientDetails = (client: Client) => {
     console.log("Showing client details:", client.id);
-    // TODO: Implement details functionality
-  };
-
-  const handleSearch = (query: string) => {
-    console.log("Searching:", query);
-    // TODO: Implement search functionality
+    // Handle details logic
   };
 
   const handleAddNewClient = () => {
-    setIsNewClientModalOpen(true);
+    console.log("Adding new client");
+    // Handle add logic
   };
 
   if (isLoading) {
     return (
-      <div className="page-container">
-        <TopActionsBar onRefresh={handleRefresh} />
-        <div className="loading-spinner">
-          <div className="spinner"></div>
+      <div className="p-8 bg-gray-50 min-h-screen">
+        <div className="animate-pulse">
+          <div className="h-8 bg-gray-200 rounded w-64 mb-8"></div>
+          <div className="h-64 bg-gray-200 rounded-xl"></div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="page-container">
-      <TopActionsBar onRefresh={handleRefresh} />
-      
-      <section>
-        <div className="toolbar-container">
-          {/* Tabs Navigation */}
-          <ClientTabs counts={{ all: clients.length }} />
+    <div className="p-8 bg-gray-50 min-h-screen">
+      <TopActionsBar />
 
-          {/* Toolbar */}
-          <ClientToolbar onSearch={handleSearch} onAddNew={handleAddNewClient} />
+      <section className="clients-section">
+        <div className="flex justify-between items-center mb-5">
+            <ClientTabs counts={{ all: filteredClients.length }} />
+            <ClientToolbar onSearch={handleSearch} onAddNew={handleAddNewClient} />
         </div>
-
-        {/* Clients Table */}
-        <div className="content-card">
+        
+        {filteredClients.length === 0 ? (
+          <div className="bg-white p-12 rounded-xl border border-gray-200 text-center">
+            <Users className="mx-auto mb-4 text-gray-400" size={48} />
+            <p className="text-gray-500 text-lg">
+              {searchTerm ? 'לא נמצאו לקוחות התואמים לחיפוש' : 'אין לקוחות במערכת'}
+            </p>
+            <p className="text-gray-400 text-sm mt-2">
+              לקוחות חדשים יוצגו כאן
+            </p>
+          </div>
+        ) : (
           <ClientTable
-            clients={clients}
+            clients={filteredClients}
             onDelete={handleDeleteClient}
             onView={handleViewClient}
             onShowDetails={handleShowClientDetails}
           />
-        </div>
+        )}
       </section>
-
-      {/* New Client Modal */}
-      <Dialog open={isNewClientModalOpen} onOpenChange={setIsNewClientModalOpen}>
-        <DialogContent className="max-w-[500px] p-0" dir="rtl">
-          <DialogHeader className="p-6 border-b text-right">
-            <DialogTitle className="text-xl font-medium">לקוח חדש</DialogTitle>
-          </DialogHeader>
-          <NewClientModal setOpen={setIsNewClientModalOpen} onClientCreated={handleClientCreated} />
-        </DialogContent>
-      </Dialog>
-
-      {/* Confirmation Modal */}
-      <ConfirmationModal
-        isOpen={confirmModal.isOpen}
-        onClose={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
-        onConfirm={confirmModal.onConfirm}
-        title={confirmModal.title}
-        message={confirmModal.message}
-        confirmText="מחק"
-        cancelText="ביטול"
-        type="danger"
-      />
     </div>
   );
 }
