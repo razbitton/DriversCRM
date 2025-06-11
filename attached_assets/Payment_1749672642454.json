@@ -1,0 +1,71 @@
+{
+  "name": "Payment",
+  "type": "object",
+  "properties": {
+    "payment_number": {
+      "type": "string",
+      "description": "מספר תשלום"
+    },
+    "driver_id": {
+      "type": "string",
+      "description": "מזהה הנהג"
+    },
+    "driver_name": {
+      "type": "string",
+      "description": "שם הנהג"
+    },
+    "amount": {
+      "type": "number",
+      "description": "סכום התשלום"
+    },
+    "payment_type": {
+      "type": "string",
+      "enum": [
+        "credit",
+        "debit",
+        "cash",
+        "transfer"
+      ],
+      "default": "transfer",
+      "description": "סוג התשלום"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "completed",
+        "failed",
+        "cancelled"
+      ],
+      "default": "pending",
+      "description": "סטטוס התשלום"
+    },
+    "payment_date": {
+      "type": "string",
+      "format": "date-time",
+      "description": "תאריך התשלום"
+    },
+    "due_date": {
+      "type": "string",
+      "format": "date-time",
+      "description": "תאריך יעד לתשלום"
+    },
+    "phone": {
+      "type": "string",
+      "description": "טלפון הנהג"
+    },
+    "description": {
+      "type": "string",
+      "description": "תיאור התשלום"
+    },
+    "notes": {
+      "type": "string",
+      "description": "הערות נוספות"
+    }
+  },
+  "required": [
+    "driver_id",
+    "driver_name",
+    "amount"
+  ]
+} 

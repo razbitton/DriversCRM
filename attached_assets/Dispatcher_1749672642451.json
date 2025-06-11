@@ -1,0 +1,63 @@
+{
+  "name": "Dispatcher",
+  "type": "object",
+  "properties": {
+    "first_name": {
+      "type": "string",
+      "description": "שם פרטי"
+    },
+    "last_name": {
+      "type": "string",
+      "description": "שם משפחה"
+    },
+    "address": {
+      "type": "string",
+      "description": "כתובת"
+    },
+    "city": {
+      "type": "string",
+      "description": "עיר"
+    },
+    "phone": {
+      "type": "string",
+      "description": "טלפון"
+    },
+    "additional_phone": {
+      "type": "string",
+      "description": "טלפון נוסף"
+    },
+    "email": {
+      "type": "string",
+      "description": "כתובת מייל"
+    },
+    "notes": {
+      "type": "string",
+      "description": "הערות"
+    },
+    "username": {
+      "type": "string",
+      "description": "שם משתמש"
+    },
+    "id_number": {
+      "type": "string",
+      "description": "מספר מזהה"
+    },
+    "password": {
+      "type": "string",
+      "description": "סיסמה"
+    },
+    "random_username": {
+      "type": "boolean",
+      "default": false,
+      "description": "בחירת שם משתמש אקראי"
+    }
+  },
+  "required": [
+    "first_name",
+    "last_name",
+    "address",
+    "phone",
+    "additional_phone",
+    "email"
+  ]
+} 

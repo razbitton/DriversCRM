@@ -1,0 +1,53 @@
+{
+  "name": "DriverReport",
+  "type": "object",
+  "properties": {
+    "driver_id": {
+      "type": "string",
+      "description": "מזהה הנהג"
+    },
+    "driver_name": {
+      "type": "string",
+      "description": "שם הנהג"
+    },
+    "serial_number": {
+      "type": "string",
+      "description": "מספר סידורי"
+    },
+    "fixed_amount": {
+      "type": "number",
+      "description": "קבועים"
+    },
+    "mandatory_variables": {
+      "type": "number",
+      "description": "משתנים חובה"
+    },
+    "optional_variables": {
+      "type": "number",
+      "description": "משתנים זכות"
+    },
+    "previous_balance": {
+      "type": "number",
+      "default": 0,
+      "description": "יתרה קודמת"
+    },
+    "trip_count": {
+      "type": "number",
+      "description": "כמות נסיעות"
+    },
+    "total_amount": {
+      "type": "number",
+      "description": "סה\"כ"
+    },
+    "is_selected": {
+      "type": "boolean",
+      "default": false,
+      "description": "האם נבחר"
+    }
+  },
+  "required": [
+    "driver_id",
+    "driver_name",
+    "serial_number"
+  ]
+} 

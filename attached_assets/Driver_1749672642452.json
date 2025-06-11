@@ -1,0 +1,106 @@
+{
+  "name": "Driver",
+  "type": "object",
+  "properties": {
+    "full_name": {
+      "type": "string",
+      "description": "שם מלא"
+    },
+    "id_number": {
+      "type": "string",
+      "description": "מספר תעודת זהות"
+    },
+    "phone": {
+      "type": "string",
+      "description": "מספר טלפון"
+    },
+    "additional_phone": {
+      "type": "string",
+      "description": "טלפון נוסף"
+    },
+    "email": {
+      "type": "string",
+      "description": "כתובת מייל"
+    },
+    "address": {
+      "type": "string",
+      "description": "כתובת"
+    },
+    "residence_area": {
+      "type": "string",
+      "description": "עיר מגורים"
+    },
+    "channel_id": {
+      "type": "string",
+      "description": "משויך לערוץ"
+    },
+    "license_number": {
+      "type": "string",
+      "description": "מספר רישיון נהיגה"
+    },
+    "vehicle_type": {
+      "type": "string",
+      "description": "סוג רכב"
+    },
+    "vehicle_license": {
+      "type": "string",
+      "description": "מספר רכב"
+    },
+    "vehicle_seats": {
+      "type": "number",
+      "description": "מספר מקומות ברכב"
+    },
+    "vehicle_condition": {
+      "type": "string",
+      "description": "מצב הרכב"
+    },
+    "vehicle_category": {
+      "type": "string",
+      "description": "קטגוריית רכב"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "busy",
+        "offline",
+        "suspended",
+        "inactive"
+      ],
+      "default": "inactive",
+      "description": "סטטוס הנהג"
+    },
+    "rating": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 5,
+      "default": 0,
+      "description": "דירוג נהג"
+    },
+    "total_trips": {
+      "type": "number",
+      "default": 0,
+      "description": "סך כל הנסיעות"
+    },
+    "join_date": {
+      "type": "string",
+      "format": "date",
+      "description": "תאריך הצטרפות"
+    },
+    "fixed_charge": {
+      "type": "number",
+      "description": "חיוב קבוע"
+    },
+    "variable_charge_percentage": {
+      "type": "number",
+      "description": "חיוב משתנה באחוזים"
+    }
+  },
+  "required": [
+    "full_name",
+    "id_number",
+    "phone",
+    "address",
+    "residence_area"
+  ]
+} 

@@ -1,0 +1,52 @@
+{
+  "name": "Channel",
+  "type": "object",
+  "properties": {
+    "manager_first_name": {
+      "type": "string",
+      "description": "שם פרטי של מנהל הערוץ"
+    },
+    "manager_last_name": {
+      "type": "string",
+      "description": "שם משפחה של מנהל הערוץ"
+    },
+    "manager_address": {
+      "type": "string",
+      "description": "כתובת מנהל הערוץ"
+    },
+    "manager_city": {
+      "type": "string",
+      "description": "עיר מנהל הערוץ"
+    },
+    "manager_phone": {
+      "type": "string",
+      "description": "טלפון מנהל הערוץ"
+    },
+    "manager_additional_phone": {
+      "type": "string",
+      "description": "טלפון נוסף של מנהל הערוץ"
+    },
+    "manager_email": {
+      "type": "string",
+      "description": "מייל מנהל הערוץ"
+    },
+    "channel_name": {
+      "type": "string",
+      "description": "שם הערוץ"
+    },
+    "channel_nickname": {
+      "type": "string",
+      "description": "כינוי הערוץ"
+    },
+    "channel_id_number": {
+      "type": "string",
+      "description": "מספר זיהוי הערוץ"
+    }
+  },
+  "required": [
+    "manager_first_name",
+    "manager_last_name",
+    "channel_name",
+    "channel_id_number"
+  ]
+} 

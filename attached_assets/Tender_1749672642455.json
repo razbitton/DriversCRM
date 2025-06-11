@@ -1,0 +1,98 @@
+{
+  "name": "Tender",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "שם המכרז"
+    },
+    "service_type": {
+      "type": "string",
+      "enum": [
+        "delivery",
+        "ride",
+        "special"
+      ],
+      "description": "סוג השירות - משלוח, הסעה או מיוחד"
+    },
+    "origin": {
+      "type": "string",
+      "description": "מקום יציאה"
+    },
+    "destination": {
+      "type": "string",
+      "description": "יעד"
+    },
+    "publication_time": {
+      "type": "string",
+      "format": "date-time",
+      "description": "זמן פרסום המכרז"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "available",
+        "taken",
+        "completed",
+        "cancelled"
+      ],
+      "default": "available",
+      "description": "סטטוס המכרז"
+    },
+    "assigned_driver_id": {
+      "type": "string",
+      "description": "מזהה הנהג שקיבל את המכרז"
+    },
+    "assigned_driver_name": {
+      "type": "string",
+      "description": "שם הנהג שקיבל את המכרז"
+    },
+    "assigned_driver_phone": {
+      "type": "string",
+      "description": "טלפון הנהג שקיבל את המכרז"
+    },
+    "client_id": {
+      "type": "string",
+      "description": "מזהה הלקוח"
+    },
+    "client_name": {
+      "type": "string",
+      "description": "שם הלקוח"
+    },
+    "contact_phone": {
+      "type": "string",
+      "description": "טלפון איש קשר"
+    },
+    "estimated_price": {
+      "type": "number",
+      "description": "מחיר משוער"
+    },
+    "actual_price": {
+      "type": "number",
+      "description": "מחיר בפועל"
+    },
+    "distance_km": {
+      "type": "number",
+      "description": "מרחק בקילומטרים"
+    },
+    "notes": {
+      "type": "string",
+      "description": "הערות נוספות"
+    },
+    "completion_time": {
+      "type": "string",
+      "format": "date-time",
+      "description": "זמן השלמת המכרז"
+    },
+    "channel_id": {
+      "type": "string",
+      "description": "מזהה ערוץ"
+    }
+  },
+  "required": [
+    "name",
+    "service_type",
+    "origin",
+    "destination"
+  ]
+} 

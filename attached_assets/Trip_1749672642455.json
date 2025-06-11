@@ -1,0 +1,79 @@
+{
+  "name": "Trip",
+  "type": "object",
+  "properties": {
+    "origin": {
+      "type": "string",
+      "description": "מקום יציאה"
+    },
+    "destination": {
+      "type": "string",
+      "description": "יעד"
+    },
+    "client_name": {
+      "type": "string",
+      "description": "שם הלקוח"
+    },
+    "trip_type": {
+      "type": "string",
+      "enum": [
+        "delivery",
+        "ride",
+        "special"
+      ],
+      "description": "סוג הנסיעה - משלוח, הסעה או מיוחד"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "waiting",
+        "completed",
+        "cancelled"
+      ],
+      "default": "waiting",
+      "description": "סטטוס הנסיעה"
+    },
+    "driver_id": {
+      "type": "string",
+      "description": "מזהה הנהג"
+    },
+    "driver_name": {
+      "type": "string",
+      "description": "שם הנהג"
+    },
+    "scheduled_time": {
+      "type": "string",
+      "format": "date-time",
+      "description": "זמן מתוכנן לנסיעה"
+    },
+    "actual_start_time": {
+      "type": "string",
+      "format": "date-time",
+      "description": "זמן התחלה בפועל"
+    },
+    "completion_time": {
+      "type": "string",
+      "format": "date-time",
+      "description": "זמן סיום"
+    },
+    "price": {
+      "type": "number",
+      "description": "מחיר הנסיעה"
+    },
+    "distance_km": {
+      "type": "number",
+      "description": "מרחק בקילומטרים"
+    },
+    "notes": {
+      "type": "string",
+      "description": "הערות נוספות"
+    }
+  },
+  "required": [
+    "origin",
+    "destination",
+    "client_name",
+    "trip_type"
+  ]
+} 

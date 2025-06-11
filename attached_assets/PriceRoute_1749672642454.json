@@ -1,0 +1,43 @@
+{
+  "name": "PriceRoute",
+  "type": "object",
+  "properties": {
+    "origin": {
+      "type": "string",
+      "description": "עיר מוצא"
+    },
+    "destination": {
+      "type": "string",
+      "description": "עיר יעד"
+    },
+    "one_way_price": {
+      "type": "number",
+      "description": "מחיר הלוך"
+    },
+    "return_price": {
+      "type": "number",
+      "description": "מחיר חזור"
+    },
+    "round_trip_price": {
+      "type": "number",
+      "description": "מחיר הלוך וחזור"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "inactive"
+      ],
+      "default": "active",
+      "description": "סטטוס (פעיל/לא פעיל)"
+    },
+    "channel_id": {
+      "type": "string",
+      "description": "מזהה ערוץ משויך (אופציונלי)"
+    }
+  },
+  "required": [
+    "origin",
+    "destination"
+  ]
+} 

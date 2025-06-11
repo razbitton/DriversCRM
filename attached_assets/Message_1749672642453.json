@@ -1,0 +1,68 @@
+{
+  "name": "Message",
+  "type": "object",
+  "properties": {
+    "channel_assignment": {
+      "type": "string",
+      "description": "שיוך לערוץ"
+    },
+    "assigned_driver_id": {
+      "type": "string",
+      "description": "מזהה נהג משויך"
+    },
+    "assigned_driver_name": {
+      "type": "string",
+      "description": "שם נהג משויך"
+    },
+    "title": {
+      "type": "string",
+      "description": "כותרת הודעה"
+    },
+    "content": {
+      "type": "string",
+      "description": "תוכן ההודעה"
+    },
+    "notes": {
+      "type": "string",
+      "description": "הערות"
+    },
+    "urgency_level": {
+      "type": "string",
+      "enum": [
+        "low",
+        "medium",
+        "high"
+      ],
+      "default": "medium",
+      "description": "רמת דחיפות"
+    },
+    "scheduled_date": {
+      "type": "string",
+      "format": "date",
+      "description": "תאריך תזמון"
+    },
+    "scheduled_time": {
+      "type": "string",
+      "description": "שעת תזמון"
+    },
+    "is_scheduled": {
+      "type": "boolean",
+      "default": false,
+      "description": "האם ההודעה מתוזמנת"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "sent",
+        "scheduled"
+      ],
+      "default": "draft",
+      "description": "סטטוס ההודעה"
+    }
+  },
+  "required": [
+    "title",
+    "content"
+  ]
+} 

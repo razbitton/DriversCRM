@@ -1,0 +1,51 @@
+{
+  "name": "Client",
+  "type": "object",
+  "properties": {
+    "serial_number": {
+      "type": "string",
+      "description": "מספר סידורי"
+    },
+    "full_name": {
+      "type": "string",
+      "description": "שם מלא"
+    },
+    "phone": {
+      "type": "string",
+      "description": "מספר טלפון"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "regular",
+        "casual"
+      ],
+      "default": "regular",
+      "description": "סטטוס לקוח (קבוע/מזדמן)"
+    },
+    "city": {
+      "type": "string",
+      "description": "עיר"
+    },
+    "payment_status": {
+      "type": "string",
+      "enum": [
+        "debt",
+        "credit",
+        "paid"
+      ],
+      "default": "paid",
+      "description": "סטטוס תשלום (חוב/יתרה/שולם)"
+    },
+    "last_activity_date": {
+      "type": "string",
+      "format": "date",
+      "description": "תאריך פעילות אחרון"
+    }
+  },
+  "required": [
+    "full_name",
+    "phone",
+    "serial_number"
+  ]
+} 
