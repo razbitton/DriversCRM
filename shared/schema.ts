@@ -79,6 +79,7 @@ export const trips = pgTable("trips", {
 
 export const payments = pgTable("payments", {
   id: serial("id").primaryKey(),
+  payment_number: text("payment_number").notNull(),
   driver_id: integer("driver_id").references(() => drivers.id).notNull(),
   trip_id: integer("trip_id").references(() => trips.id),
   amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),

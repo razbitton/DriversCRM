@@ -3,7 +3,9 @@ import { useQuery } from "@tanstack/react-query";
 import { Plus, Filter } from "lucide-react";
 import TopActionsBar from "@/components/common/TopActionsBar";
 import StatsCard from "@/components/dashboard/StatsCard";
-import TenderTable from "@/components/dashboard/TenderTable";
+import TenderTable from "@/components/tenders/TenderTable";
+import TenderTabs from "@/components/tenders/TenderTabs";
+import TenderToolbar from "@/components/tenders/TenderToolbar";
 import SearchInput from "@/components/common/SearchInput";
 import ConfirmationModal from "@/components/common/ConfirmationModal";
 import NewTenderModal from "@/components/modals/NewTenderModal";
@@ -86,12 +88,11 @@ export default function Dashboard() {
     }
   };
 
-  const tabs = [
-    { id: "all", label: `כל המכרזים (${tenders.length})` },
-    { id: "active", label: `פעילים (${stats?.active || 0})` },
-    { id: "completed", label: `הושלמו (${stats?.completed || 0})` },
-    { id: "waiting", label: `ממתינים (${stats?.waiting || 0})` },
-  ];
+  const tabCounts = {
+    all: tenders.length,
+    active: tenders.filter(t => t.status === "active").length,
+    completed: tenders.filter(t => t.status === "completed").length,
+  };
 
   if (statsLoading || tendersLoading) {
     return (
@@ -112,16 +113,16 @@ export default function Dashboard() {
       <div className="stats-grid">
         <StatsCard
           title="מכרזים פעילים"
-          value={stats?.active || 0}
+          value={tabCounts.active}
           isActive={true}
         />
         <StatsCard
           title="ממתינים לאישור"
-          value={stats?.waiting || 0}
+          value={tenders.filter(t => t.status === "waiting").length}
         />
         <StatsCard
           title="הושלמו השבוע"
-          value={stats?.completed || 0}
+          value={tabCounts.completed}
         />
         <StatsCard
           title="סטטיסטיקות נוספות"
@@ -132,20 +133,11 @@ export default function Dashboard() {
       {/* Tenders Section */}
       <section>
         <div className="toolbar-container">
-          {/* Tabs Navigation */}
-          <nav className="tab-navigation">
-            <div style={{ display: 'flex', gap: '2rem' }}>
-              {tabs.map((tab) => (
-                <button
-                  key={tab.id}
-                  className={`tab-link ${activeTab === tab.id ? 'active' : ''}`}
-                  onClick={() => setActiveTab(tab.id)}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </div>
-          </nav>
+          <TenderTabs 
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+            counts={tabCounts}
+          />
 
           {/* Toolbar */}
           <div className="flex items-center gap-4">
@@ -157,12 +149,10 @@ export default function Dashboard() {
               מכרז חדש
             </Button>
 
-            <SearchInput onSearch={handleSearch} placeholder="חיפוש כללי..." />
-
-            <Button variant="outline" className="btn-outline-fleet">
-              <Filter size={16} />
-              סינון
-            </Button>
+            <TenderToolbar 
+              onSearch={handleSearch}
+              onFilter={(filters) => console.log('Filter:', filters)}
+            />
           </div>
         </div>
 
