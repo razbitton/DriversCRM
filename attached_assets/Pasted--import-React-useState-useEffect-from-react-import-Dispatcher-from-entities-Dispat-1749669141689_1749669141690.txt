@@ -1,0 +1,604 @@
+
+import React, { useState, useEffect } from 'react';
+import { Dispatcher } from '@/entities/Dispatcher';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Switch } from '@/components/ui/switch';
+import {
+  Dialog,
+  DialogContent,
+} from "@/components/ui/dialog";
+import { Pencil, Plus, Filter, Search, Trash2 } from 'lucide-react';
+
+const NewDispatcherModal = ({ isOpen, setIsOpen, onDispatcherCreated }) => {
+    const [formData, setFormData] = useState({
+        first_name: 'משה',
+        last_name: 'אייזנברך',
+        address: 'עזרת תורה 8',
+        city: 'ירושלים',
+        phone: '',
+        additional_phone: '',
+        email: '',
+        notes: '',
+        username: '',
+        id_number: '',
+        password: '',
+        confirm_password: '',
+        random_username: false
+    });
+
+    const handleChange = (field, value) => {
+        setFormData(prev => ({ ...prev, [field]: value }));
+    };
+
+    const handleSubmit = async () => {
+        try {
+            const dispatcherData = { ...formData };
+            delete dispatcherData.confirm_password;
+            await Dispatcher.create(dispatcherData);
+            onDispatcherCreated();
+            setIsOpen(false);
+            console.log('Dispatcher created successfully');
+        } catch (error) {
+            console.error('Error creating dispatcher:', error);
+        }
+    };
+
+    return (
+        <Dialog open={isOpen} onOpenChange={setIsOpen}>
+            <DialogContent className="max-w-[800px] p-0 overflow-hidden bg-white" dir="rtl">
+                <style>{`
+                    .modal-header-custom {
+                        padding: 1rem 1.5rem;
+                        border-bottom: 1px solid #e5e7eb;
+                        background: white;
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                    }
+                    .modal-header-custom h3 {
+                        font-size: 1.125rem;
+                        font-weight: 500;
+                        margin: 0;
+                        color: #374151;
+                    }
+                    .close-button-custom {
+                        background: none;
+                        border: none;
+                        font-size: 1.25rem;
+                        color: #6b7280;
+                        cursor: pointer;
+                        padding: 0.25rem;
+                        line-height: 1;
+                    }
+                    .close-button-custom:hover {
+                        color: #374151;
+                    }
+                    .modal-body-custom {
+                        padding: 1.5rem;
+                        max-height: 70vh;
+                        overflow-y: auto;
+                    }
+                    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem 2rem; }
+                    .form-grid-complex { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.5rem 2rem; }
+                    .form-group { display: flex; flex-direction: column; gap: 0.5rem; }
+                    .form-group.full-span { grid-column: 1 / -1; }
+                    .form-group label { font-size: 0.9rem; color: #6c757d; }
+                    .required { color: #dc3545; }
+                    .label-info { font-size: 0.8rem; color: #6c757d; }
+                    .input-with-icon { position: relative; }
+                    .input-with-icon .icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #6c757d; pointer-events: none; }
+                    .modal-body-custom input, .modal-body-custom textarea { 
+                        background-color: #f8f9fa; 
+                        border: 1px solid #e9ecef; 
+                        border-radius: 6px; 
+                        padding: 0.7rem; 
+                        width: 100%; 
+                        box-sizing: border-box; 
+                    }
+                    .btn-add-field-icon {
+                        background-color: #f8f9fa;
+                        border: 1px solid #e9ecef;
+                        border-radius: 6px;
+                        padding: 0.7rem;
+                        cursor: pointer;
+                        color: #6c757d;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        height: 100%;
+                    }
+                    .settings-card { margin-bottom: 1.5rem; }
+                    .settings-card h4 { font-weight: 500; margin: 0 0 1.5rem 0; font-size: 1rem; }
+                    .form-footer { margin-top: 1.5rem; display: flex; justify-content: space-between; align-items: center; }
+                    .checkbox-group { display: flex; align-items: center; gap: 0.5rem; }
+                    .card-actions { display: flex; justify-content: flex-end; gap: 1rem; }
+                    .btn-action { 
+                        background-color: #fdd85d; 
+                        border: none; 
+                        padding: 0.7rem 1.5rem; 
+                        font-weight: 700; 
+                        border-radius: 8px;
+                        color: #212529;
+                        cursor: pointer;
+                    }
+                    .btn-cancel {
+                        background-color: #f8f9fa;
+                        border: 1px solid #e9ecef;
+                        padding: 0.7rem 1.5rem;
+                        font-weight: 700;
+                        border-radius: 8px;
+                        color: #212529;
+                        cursor: pointer;
+                    }
+                `}</style>
+                
+                <div className="modal-header-custom">
+                    <h3>מוקדן חדש</h3>
+                    <button 
+                        className="close-button-custom"
+                        onClick={() => setIsOpen(false)}
+                    >
+                        ×
+                    </button>
+                </div>
+
+                <div className="modal-body-custom">
+                    <div className="settings-card">
+                        <h4>פרטים אישיים</h4>
+                        <div className="form-grid-complex">
+                            <div className="form-group">
+                                <label>שם פרטי <span className="required">*</span></label>
+                                <div className="input-with-icon">
+                                    <Input 
+                                        type="text" 
+                                        value={formData.first_name}
+                                        onChange={(e) => handleChange('first_name', e.target.value)}
+                                    />
+                                    <Pencil size={16} className="icon" />
+                                </div>
+                            </div>
+                            <div className="form-group">
+                                <label>שם משפחה <span className="required">*</span></label>
+                                <div className="input-with-icon">
+                                    <Input 
+                                        type="text" 
+                                        value={formData.last_name}
+                                        onChange={(e) => handleChange('last_name', e.target.value)}
+                                    />
+                                    <Pencil size={16} className="icon" />
+                                </div>
+                            </div>
+                            <div className="form-group">
+                                <label>כתובת <span className="required">*</span></label>
+                                <div className="input-with-icon">
+                                    <Input 
+                                        type="text" 
+                                        value={formData.address}
+                                        onChange={(e) => handleChange('address', e.target.value)}
+                                    />
+                                    <Pencil size={16} className="icon" />
+                                </div>
+                            </div>
+                            <div className="form-group">
+                                <label>עיר</label>
+                                <div className="input-with-icon">
+                                    <Input 
+                                        type="text" 
+                                        value={formData.city}
+                                        onChange={(e) => handleChange('city', e.target.value)}
+                                    />
+                                    <Pencil size={16} className="icon" />
+                                </div>
+                            </div>
+                            <div className="form-group">
+                                <label>טלפון <span className="required">*</span></label>
+                                <div className="input-with-icon">
+                                    <Input 
+                                        type="text" 
+                                        value={formData.phone}
+                                        onChange={(e) => handleChange('phone', e.target.value)}
+                                    />
+                                    <Pencil size={16} className="icon" />
+                                </div>
+                            </div>
+                            <div className="form-group">
+                                <label>טלפון נוסף <span className="required">*</span></label>
+                                <div className="input-with-icon">
+                                    <Input 
+                                        type="text" 
+                                        value={formData.additional_phone}
+                                        onChange={(e) => handleChange('additional_phone', e.target.value)}
+                                    />
+                                    <Pencil size={16} className="icon" />
+                                </div>
+                            </div>
+                            <div className="form-group">
+                                <label>כתובת מייל <span className="required">*</span></label>
+                                <div className="input-with-icon">
+                                    <Input 
+                                        type="email" 
+                                        value={formData.email}
+                                        onChange={(e) => handleChange('email', e.target.value)}
+                                    />
+                                    <Pencil size={16} className="icon" />
+                                </div>
+                            </div>
+                            <div className="form-group">
+                                <label>שדה חדש</label>
+                                <button className="btn-add-field-icon">
+                                    <Plus size={18} />
+                                </button>
+                            </div>
+                            <div className="form-group full-span">
+                                <label>הערות</label>
+                                <div className="input-with-icon">
+                                    <Textarea 
+                                        value={formData.notes}
+                                        onChange={(e) => handleChange('notes', e.target.value)}
+                                        className="min-h-[60px]"
+                                    />
+                                    <Pencil size={16} className="icon" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="settings-card">
+                        <h4>עדכון שם משתמש וסיסמה</h4>
+                        <div className="form-grid">
+                            <div className="form-group">
+                                <label>שם משתמש</label>
+                                <div className="input-with-icon">
+                                    <Input 
+                                        type="text" 
+                                        value={formData.username}
+                                        onChange={(e) => handleChange('username', e.target.value)}
+                                    />
+                                    <Pencil size={16} className="icon" />
+                                </div>
+                            </div>
+                            <div className="form-group">
+                                <label>מספר מזהה</label>
+                                <div className="input-with-icon">
+                                    <Input 
+                                        type="text" 
+                                        value={formData.id_number}
+                                        onChange={(e) => handleChange('id_number', e.target.value)}
+                                    />
+                                    <Pencil size={16} className="icon" />
+                                </div>
+                            </div>
+                            <div className="form-group">
+                                <label>סיסמה חדשה</label>
+                                <div className="input-with-icon">
+                                    <Input 
+                                        type="password" 
+                                        value={formData.password}
+                                        onChange={(e) => handleChange('password', e.target.value)}
+                                    />
+                                    <Pencil size={16} className="icon" />
+                                </div>
+                            </div>
+                            <div className="form-group">
+                                <label>
+                                    אישור סיסמה <span className="label-info">8-16 תווים, זהים לסיסמה החדשה</span>
+                                </label>
+                                <div className="input-with-icon">
+                                    <Input 
+                                        type="password" 
+                                        value={formData.confirm_password}
+                                        onChange={(e) => handleChange('confirm_password', e.target.value)}
+                                    />
+                                    <Pencil size={16} className="icon" />
+                                </div>
+                            </div>
+                        </div>
+                        <div className="form-footer">
+                            <div className="checkbox-group">
+                                <Checkbox 
+                                    id="random-user"
+                                    checked={formData.random_username}
+                                    onCheckedChange={(checked) => handleChange('random_username', checked)}
+                                />
+                                <label htmlFor="random-user">בחירת שם משתמש אקראי</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="card-actions">
+                        <Button className="btn-cancel" onClick={() => setIsOpen(false)}>
+                            ביטול
+                        </Button>
+                        <Button className="btn-action" onClick={handleSubmit}>
+                            שמור
+                        </Button>
+                    </div>
+                </div>
+            </DialogContent>
+        </Dialog>
+    );
+};
+
+export default function DispatcherSettings() {
+    const [dispatchers, setDispatchers] = useState([]);
+    const [selectedDispatchers, setSelectedDispatchers] = useState(new Set());
+    const [selectAll, setSelectAll] = useState(false);
+    const [isNewDispatcherModalOpen, setIsNewDispatcherModalOpen] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        loadDispatchers();
+    }, []);
+
+    const loadDispatchers = async () => {
+        try {
+            const data = await Dispatcher.list();
+            setDispatchers(data);
+        } catch (error) {
+            console.error('Error loading dispatchers:', error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleSelectAll = (checked) => {
+        setSelectAll(checked);
+        if (checked) {
+            setSelectedDispatchers(new Set(dispatchers.map(dispatcher => dispatcher.id)));
+        } else {
+            setSelectedDispatchers(new Set());
+        }
+    };
+
+    const handleSelectDispatcher = (dispatcherId, checked) => {
+        const newSelected = new Set(selectedDispatchers);
+        if (checked) {
+            newSelected.add(dispatcherId);
+        } else {
+            newSelected.delete(dispatcherId);
+        }
+        setSelectedDispatchers(newSelected);
+        setSelectAll(newSelected.size > 0 && newSelected.size === dispatchers.length);
+    };
+
+    const handleDeleteDispatcher = async (dispatcher) => {
+        if (window.confirm(`האם אתה בטוח שברצונך למחוק את המוקדן ${dispatcher.first_name} ${dispatcher.last_name}?`)) {
+            try {
+                await Dispatcher.delete(dispatcher.id);
+                loadDispatchers();
+            } catch (error) {
+                console.error('Error deleting dispatcher:', error);
+            }
+        }
+    };
+
+    const handleToggleActive = async (dispatcher, isActive) => {
+        try {
+            await Dispatcher.update(dispatcher.id, { ...dispatcher, is_active: isActive });
+            loadDispatchers();
+        } catch (error) {
+            console.error('Error updating dispatcher status:', error);
+        }
+    };
+
+    return (
+        <>
+            <style>{`
+                .content-header {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    margin-bottom: 1.5rem;
+                }
+                .filters {
+                    display: flex;
+                    gap: 1rem;
+                }
+                .filter-btn {
+                    background: none;
+                    border: 1px solid #ced4da;
+                    border-radius: 8px;
+                    padding: 0.5rem 1rem;
+                    cursor: pointer;
+                    color: #6c757d;
+                    display: flex;
+                    align-items: center;
+                    gap: 0.5rem;
+                }
+                .filter-btn:hover {
+                    background-color: #f8f9fa;
+                }
+                .btn-action-primary {
+                    background-color: #fdd85d;
+                    border: none;
+                    padding: 0.7rem 1.5rem;
+                    font-weight: 700;
+                    border-radius: 8px;
+                    color: #212529;
+                    cursor: pointer;
+                }
+                .btn-action-primary:hover {
+                    background-color: #fce047;
+                }
+                .data-table-container {
+                    background-color: #fff;
+                    border-radius: 8px;
+                    overflow: hidden;
+                    border: 1px solid #e9ecef;
+                }
+                .dispatcher-table {
+                    width: 100%;
+                    border-collapse: collapse;
+                }
+                .dispatcher-table thead th {
+                    background-color: #fff;
+                    padding: 1rem 1.5rem;
+                    text-align: right;
+                    font-weight: 500;
+                    color: #6c757d;
+                    border-bottom: 1px solid #e9ecef;
+                    white-space: nowrap;
+                }
+                .dispatcher-table tbody td {
+                    padding: 0.75rem 1.5rem;
+                    border-bottom: 1px solid #f1f3f5;
+                    vertical-align: middle;
+                }
+                .dispatcher-table tbody tr:last-child td {
+                    border-bottom: none;
+                }
+                .icon-btn {
+                    background-color: #fef8e7;
+                    border: 1px solid #f0dca4;
+                    color: #a8842c;
+                    padding: 0.4rem 0.6rem;
+                    border-radius: 6px;
+                    cursor: pointer;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                }
+                .icon-btn:hover {
+                    background-color: #fff3cd;
+                }
+                .toggle-switch {
+                    position: relative;
+                    display: inline-block;
+                    width: 50px;
+                    height: 28px;
+                }
+                .toggle-switch input {
+                    opacity: 0;
+                    width: 0;
+                    height: 0;
+                }
+                .slider {
+                    position: absolute;
+                    cursor: pointer;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    bottom: 0;
+                    background-color: #ccc;
+                    border-radius: 28px;
+                    transition: .4s;
+                }
+                .slider:before {
+                    position: absolute;
+                    content: "";
+                    height: 20px;
+                    width: 20px;
+                    left: 4px;
+                    bottom: 4px;
+                    background-color: white;
+                    border-radius: 50%;
+                    transition: .4s;
+                    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+                }
+                input:checked + .slider {
+                    background-color: #fdd85d;
+                }
+                input:checked + .slider:before {
+                    transform: translateX(22px);
+                }
+            `}</style>
+
+            <div className="content-header">
+                <div className="filters">
+                    <button className="filter-btn">
+                        <Filter size={16} />
+                        סינון
+                    </button>
+                    <button className="filter-btn">
+                        <Search size={16} />
+                        חיפוש
+                    </button>
+                </div>
+                <Button 
+                    className="btn-action-primary"
+                    onClick={() => setIsNewDispatcherModalOpen(true)}
+                >
+                    הוספת מוקדן חדש
+                </Button>
+            </div>
+            
+            <div className="data-table-container">
+                <table className="dispatcher-table">
+                    <thead>
+                        <tr>
+                            <th>
+                                <Checkbox
+                                    checked={selectAll}
+                                    onCheckedChange={handleSelectAll}
+                                />
+                            </th>
+                            <th>שם המוקדן</th>
+                            <th>אזור מגורים</th>
+                            <th>טלפון</th>
+                            <th>טלפון נוסף</th>
+                            <th>מייל</th>
+                            <th></th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {isLoading ? (
+                            <tr>
+                                <td colSpan="8" className="text-center py-8">
+                                    טוען מוקדנים...
+                                </td>
+                            </tr>
+                        ) : dispatchers.length === 0 ? (
+                            <tr>
+                                <td colSpan="8" className="text-center py-8 text-gray-500">
+                                    אין מוקדנים במערכת
+                                </td>
+                            </tr>
+                        ) : (
+                            dispatchers.map(dispatcher => (
+                                <tr key={dispatcher.id}>
+                                    <td>
+                                        <Checkbox
+                                            checked={selectedDispatchers.has(dispatcher.id)}
+                                            onCheckedChange={(checked) => handleSelectDispatcher(dispatcher.id, checked)}
+                                        />
+                                    </td>
+                                    <td className="font-semibold">
+                                        {dispatcher.first_name} {dispatcher.last_name}
+                                    </td>
+                                    <td>{dispatcher.city}</td>
+                                    <td>{dispatcher.phone}</td>
+                                    <td>{dispatcher.additional_phone}</td>
+                                    <td>{dispatcher.email}</td>
+                                    <td>
+                                        <Switch
+                                            checked={dispatcher.is_active || false}
+                                            onCheckedChange={(checked) => handleToggleActive(dispatcher, checked)}
+                                        />
+                                    </td>
+                                    <td>
+                                        <button 
+                                            className="icon-btn"
+                                            onClick={() => handleDeleteDispatcher(dispatcher)}
+                                        >
+                                            <Trash2 size={16} />
+                                        </button>
+                                    </td>
+                                </tr>
+                            ))
+                        )}
+                    </tbody>
+                </table>
+            </div>
+
+            <NewDispatcherModal
+                isOpen={isNewDispatcherModalOpen}
+                setIsOpen={setIsNewDispatcherModalOpen}
+                onDispatcherCreated={loadDispatchers}
+            />
+        </>
+    );
+}
