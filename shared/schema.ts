@@ -92,11 +92,15 @@ export const payments = pgTable("payments", {
 
 export const pricing = pgTable("pricing", {
   id: serial("id").primaryKey(),
+  channel_id: text("channel_id").notNull(),
   route_name: text("route_name").notNull(),
   origin: text("origin").notNull(),
   destination: text("destination").notNull(),
   service_type: text("service_type").notNull(),
   base_price: decimal("base_price", { precision: 10, scale: 2 }).notNull(),
+  one_way_price: decimal("one_way_price", { precision: 10, scale: 2 }),
+  return_price: decimal("return_price", { precision: 10, scale: 2 }),
+  round_trip_price: decimal("round_trip_price", { precision: 10, scale: 2 }),
   per_km_price: decimal("per_km_price", { precision: 10, scale: 2 }),
   min_price: decimal("min_price", { precision: 10, scale: 2 }),
   max_price: decimal("max_price", { precision: 10, scale: 2 }),

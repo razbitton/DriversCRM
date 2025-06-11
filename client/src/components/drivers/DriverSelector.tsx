@@ -15,7 +15,7 @@ export default function DriverSelector({ onDriversChange, selectedDrivers = [] }
   const [filteredDrivers, setFilteredDrivers] = useState<Driver[]>([]);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const { data: drivers = [] } = useQuery({
+  const { data: drivers = [] } = useQuery<Driver[]>({
     queryKey: ['/api/drivers'],
   });
 
@@ -39,7 +39,7 @@ export default function DriverSelector({ onDriversChange, selectedDrivers = [] }
       return;
     }
     
-    const filtered = drivers.filter((driver: Driver) =>
+    const filtered = drivers.filter((driver) =>
       driver.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       driver.phone?.includes(searchTerm) ||
       driver.id_number?.includes(searchTerm)

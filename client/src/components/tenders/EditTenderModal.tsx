@@ -44,14 +44,7 @@ export default function EditTenderModal({ setOpen, onTenderUpdated, tender }: Ed
 
   const updateTenderMutation = useMutation({
     mutationFn: async (data: any) => {
-      const response = await apiRequest(`/api/tenders/${tender.id}`, {
-        method: 'PUT',
-        body: JSON.stringify(data),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-      return response;
+      return await apiRequest(`/api/tenders/${tender.id}`, 'PUT', data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/tenders'] });

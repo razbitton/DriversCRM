@@ -126,16 +126,16 @@ export default function PaymentTable({ payments, onEdit, onView, onDelete }: Pay
                 </Badge>
               </div>
               <div className="text-sm">
-                {payment.phone || '050.7.655642'}
+                נהג #{payment.driver_id}
               </div>
               <div className="text-sm">
-                {payment.phone || '050.7.655642'}
+                {payment.payment_type}
               </div>
               <div className="text-sm">
-                {payment.description || 'משה אברהמי'}
+                {payment.description || 'תשלום רגיל'}
               </div>
               <div className="font-medium">
-                {payment.driver_name}
+                נהג #{payment.driver_id}
               </div>
               <div className="col-actions">
                 <button 
