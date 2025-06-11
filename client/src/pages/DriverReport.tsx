@@ -1,222 +1,428 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Filter, Download, Calendar } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Filter, Search, ArrowUpDown, Eye, Download, Send, Printer, FileSpreadsheet } from "lucide-react";
 import TopActionsBar from "@/components/common/TopActionsBar";
 import SearchInput from "@/components/common/SearchInput";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
-import { format } from "date-fns";
-import { formatCurrency } from "@/utils";
-import type { Driver, Trip, Payment } from "@shared/schema";
+import type { Driver } from "@shared/schema";
 
 export default function DriverReport() {
-  const [selectedDriver, setSelectedDriver] = useState<string>("all");
-  const [dateRange, setDateRange] = useState<string>("month");
+  const [reports, setReports] = useState<any[]>([]);
+  const [filteredReports, setFilteredReports] = useState<any[]>([]);
+  const [selectedReports, setSelectedReports] = useState(new Set<number>());
+  const [isLoading, setIsLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectAll, setSelectAll] = useState(false);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const [selectedDriverForDetails, setSelectedDriverForDetails] = useState<any>(null);
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [selectedReportForExport, setSelectedReportForExport] = useState<any>(null);
+  const [selectedDriverForExport, setSelectedDriverForExport] = useState<any>(null);
 
-  // Fetch drivers
   const { data: drivers = [] } = useQuery<Driver[]>({
     queryKey: ["/api/drivers"],
   });
 
-  // Fetch trips
-  const { data: trips = [] } = useQuery<Trip[]>({
-    queryKey: ["/api/trips"],
-  });
+  useEffect(() => {
+    loadReports();
+  }, []);
 
-  // Fetch payments
-  const { data: payments = [] } = useQuery<Payment[]>({
-    queryKey: ["/api/payments"],
-  });
+  useEffect(() => {
+    filterReports();
+  }, [reports, searchTerm]);
 
-  const handleSearch = (query: string) => {
-    console.log("Searching:", query);
-    // TODO: Implement search functionality
-  };
-
-  const handleExportReport = () => {
-    console.log("Exporting driver report");
-    // TODO: Implement export functionality
-  };
-
-  const getDriverStats = (driverId: number) => {
-    const driverTrips = trips.filter(t => t.driver_id === driverId);
-    const driverPayments = payments.filter(p => p.driver_id === driverId);
-    
-    return {
-      totalTrips: driverTrips.length,
-      completedTrips: driverTrips.filter(t => t.status === "completed").length,
-      totalEarnings: driverPayments.reduce((sum, p) => sum + parseFloat(p.amount), 0),
-      avgRating: 4.5, // Mock rating
-    };
-  };
-
-  const getFilteredDrivers = () => {
-    if (selectedDriver === "all") {
-      return drivers;
+  const loadReports = async () => {
+    try {
+      // Mock data for demonstration - in real app would fetch from API
+      const mockReports = [
+        {
+          id: 1,
+          serial_number: '001',
+          driver_name: 'איתי כהן',
+          fixed_amount: 2500,
+          mandatory_variables: 800,
+          optional_variables: 300,
+          previous_balance: -150,
+          trip_count: 28,
+          total_amount: 3450
+        },
+        {
+          id: 2,
+          serial_number: '002',
+          driver_name: 'יוסף לוי',
+          fixed_amount: 2500,
+          mandatory_variables: 920,
+          optional_variables: 450,
+          previous_balance: 200,
+          trip_count: 32,
+          total_amount: 4070
+        },
+        {
+          id: 3,
+          serial_number: '003',
+          driver_name: 'דוד מזרחי',
+          fixed_amount: 2500,
+          mandatory_variables: 750,
+          optional_variables: 200,
+          previous_balance: 0,
+          trip_count: 25,
+          total_amount: 3450
+        },
+        {
+          id: 4,
+          serial_number: '004',
+          driver_name: 'משה אברהם',
+          fixed_amount: 2500,
+          mandatory_variables: 650,
+          optional_variables: 150,
+          previous_balance: 100,
+          trip_count: 22,
+          total_amount: 3400
+        },
+        {
+          id: 5,
+          serial_number: '005',
+          driver_name: 'יואל רבין',
+          fixed_amount: 2500,
+          mandatory_variables: 890,
+          optional_variables: 320,
+          previous_balance: -50,
+          trip_count: 30,
+          total_amount: 3660
+        }
+      ];
+      setReports(mockReports);
+    } catch (error) {
+      console.error("Error loading driver reports:", error);
+    } finally {
+      setIsLoading(false);
     }
-    return drivers.filter(d => d.id.toString() === selectedDriver);
   };
+
+  const filterReports = () => {
+    let filtered = reports;
+
+    if (searchTerm) {
+      const lowerSearch = searchTerm.toLowerCase();
+      filtered = filtered.filter(report =>
+        report.driver_name.toLowerCase().includes(lowerSearch) ||
+        report.serial_number.includes(lowerSearch)
+      );
+    }
+
+    setFilteredReports(filtered);
+  };
+
+  const handleSelectAll = (checked: boolean) => {
+    setSelectAll(checked);
+    if (checked) {
+      setSelectedReports(new Set(filteredReports.map(report => report.id)));
+    } else {
+      setSelectedReports(new Set());
+    }
+  };
+
+  const handleSelectReport = (reportId: number, checked: boolean) => {
+    const newSelected = new Set(selectedReports);
+    if (checked) {
+      newSelected.add(reportId);
+    } else {
+      newSelected.delete(reportId);
+    }
+    setSelectedReports(newSelected);
+    setSelectAll(newSelected.size > 0 && newSelected.size === filteredReports.length);
+  };
+
+  const handleViewDriver = async (report: any) => {
+    if (!report.driver_name) {
+        console.error("Report does not have a driver_name");
+        alert("לדוח זה לא משויך שם נהג.");
+        return;
+    }
+    try {
+        const matchingDriver = drivers.find(d => d.full_name === report.driver_name);
+        if (matchingDriver) {
+            setSelectedDriverForDetails(matchingDriver);
+            setIsDetailsModalOpen(true);
+        } else {
+            alert(`שגיאה: לא ניתן למצוא את פרטי הנהג '${report.driver_name}'. ייתכן שהנהג נמחק מהמערכת.`);
+        }
+    } catch (error) {
+        console.error("Error fetching driver details:", error);
+        alert("אירעה שגיאה בעת שליפת נתוני הנהג.");
+    }
+  };
+
+  const handleExportDriver = async (report: any) => {
+    if (!report.driver_name) {
+      console.error("Report does not have a driver_name");
+      alert("לדוח זה לא משויך שם נהג.");
+      return;
+    }
+    try {
+      const matchingDriver = drivers.find(d => d.full_name === report.driver_name);
+      if (matchingDriver) {
+        setSelectedDriverForExport(matchingDriver);
+        setSelectedReportForExport(report);
+        setIsExportModalOpen(true);
+      } else {
+        alert(`שגיאה: לא ניתן למצוא את פרטי הנהג '${report.driver_name}'.`);
+      }
+    } catch (error) {
+      console.error("Error fetching driver for export:", error);
+      alert("אירעה שגיאה בעת שליפת נתוני הנהג.");
+    }
+  };
+
+  const formatCurrency = (amount: number) => {
+    return `₪ ${amount?.toLocaleString() || '0'}`;
+  };
+
+  if (isLoading) {
+    return (
+      <div className="p-8 bg-gray-50 min-h-screen">
+        <div className="animate-pulse">
+          <div className="h-8 bg-gray-200 rounded w-64 mb-8"></div>
+          <div className="h-96 bg-gray-200 rounded-xl"></div>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="page-container">
+    <div className="p-8 bg-gray-50 min-h-screen">
+      <style>{`
+        .report-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 1.5rem;
+        }
+        
+        .report-header h2 {
+          margin: 0;
+          font-weight: 500;
+          font-size: 1.5rem;
+        }
+        
+        .subtitle {
+          font-weight: 400;
+          color: #6c757d;
+          font-size: 1rem;
+          margin-right: 0.5rem;
+        }
+        
+        .filters {
+          display: flex;
+          gap: 1rem;
+        }
+        
+        .filter-btn {
+          background: none;
+          border: 1px solid #ced4da;
+          border-radius: 8px;
+          padding: 0.5rem 1rem;
+          cursor: pointer;
+          color: #6c757d;
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+        }
+        
+        .data-table-container {
+          background-color: #fff;
+          border-radius: 8px;
+          overflow: hidden;
+          border: 1px solid #e9ecef;
+        }
+        
+        .table-header, .table-row {
+          display: grid;
+          grid-template-columns: 40px 120px 2fr 1fr 1fr 1fr 1fr 1fr 1fr 120px;
+          align-items: center;
+          padding: 10px 20px;
+          gap: 15px;
+        }
+        
+        .table-header {
+          background-color: #f8f9fa;
+          color: #6c757d;
+          font-weight: 500;
+          font-size: 14px;
+          border-bottom: 1px solid #dee2e6;
+          padding: 15px 20px;
+        }
+        
+        .table-row {
+          border: 1px solid transparent;
+          border-bottom: 1px solid #f1f3f5;
+          font-size: 15px;
+          transition: background-color 0.2s;
+        }
+
+        .table-row:last-child {
+            border-bottom: 1px solid transparent;
+        }
+        
+        .table-row:hover {
+          background-color: #f8f9fa;
+        }
+        
+        .row-highlighted {
+          border-color: #fceec4;
+          background-color: #fffcf2;
+        }
+        
+        .col-actions {
+          display: flex;
+          justify-content: flex-end;
+          align-items: center;
+          gap: 8px;
+        }
+        
+        .btn-icon-action {
+          background: #fef8e7;
+          border: 1px solid #f0dca4;
+          color: #a8842c;
+          width: 32px;
+          height: 32px;
+          border-radius: 6px;
+          cursor: pointer;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          transition: all 0.2s;
+        }
+        
+        .btn-icon-action:hover {
+          background-color: #fff3cd;
+        }
+        
+        .report-actions-footer {
+          margin-top: 1.5rem;
+          display: flex;
+          justify-content: flex-start;
+          gap: 1rem;
+          padding: 1rem 0;
+        }
+        
+        .btn-action {
+          background-color: #fef8e7;
+          border: 1px solid #f0dca4;
+          color: #212529;
+          padding: 0.6rem 1rem;
+          border-radius: 8px;
+          cursor: pointer;
+          font-size: 0.9rem;
+          font-weight: 500;
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+        }
+        
+        .btn-action:hover {
+          background-color: #fff3cd;
+        }
+      `}</style>
+      
       <TopActionsBar />
-      
-      <div className="page-header">
-        <h1 className="page-title">דוח נהגים</h1>
-        <p className="text-gray-600">מידע מפורט על ביצועי הנהגים במערכת</p>
-      </div>
-      
+
       <section>
-        <div className="toolbar-container">
-          {/* Filters */}
-          <div className="flex items-center gap-4">
-            <Select value={selectedDriver} onValueChange={setSelectedDriver}>
-              <SelectTrigger className="w-48">
-                <SelectValue placeholder="בחר נהג" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">כל הנהגים</SelectItem>
-                {drivers.map((driver) => (
-                  <SelectItem key={driver.id} value={driver.id.toString()}>
-                    {driver.first_name} {driver.last_name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Select value={dateRange} onValueChange={setDateRange}>
-              <SelectTrigger className="w-48">
-                <SelectValue placeholder="טווח תאריכים" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="week">שבוע אחרון</SelectItem>
-                <SelectItem value="month">חודש אחרון</SelectItem>
-                <SelectItem value="quarter">רבעון אחרון</SelectItem>
-                <SelectItem value="year">שנה אחרונה</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Toolbar */}
-          <div className="flex items-center gap-4">
-            <Button 
-              className="btn-primary-fleet"
-              onClick={handleExportReport}
-            >
-              <Download size={16} />
-              ייצוא דוח
-            </Button>
-
-            <SearchInput onSearch={handleSearch} placeholder="חיפוש נהגים..." />
-
-            <Button variant="outline" className="btn-outline-fleet">
+        <div className="report-header">
+          <h2>
+            דוחות נהגים 
+            <span className="subtitle">(כל הנהגים)</span>
+          </h2>
+          <div className="filters">
+            <SearchInput onSearch={setSearchTerm} placeholder="חיפוש..." />
+            <button className="filter-btn">
               <Filter size={16} />
-              סינונים מתקדמים
-            </Button>
+              סינון
+            </button>
           </div>
         </div>
 
-        {/* Drivers Report Table */}
-        <div className="content-card">
-          <div className="data-table">
-            <div className="table-header" style={{ gridTemplateColumns: "2fr 1.5fr 1fr 1fr 1fr 1fr 1fr 150px" }}>
-              <div>נהג</div>
-              <div>טלפון</div>
-              <div>נסיעות</div>
-              <div>הושלמו</div>
-              <div>הכנסות</div>
-              <div>דירוג</div>
-              <div>סטטוס</div>
-              <div className="text-left">פעולות</div>
-            </div>
-            
+        <div className="data-table-container">
+          <div className="table-header">
             <div>
-              {getFilteredDrivers().map((driver) => {
-                const stats = getDriverStats(driver.id);
-                const statusStyle = driver.status === "active" 
-                  ? "bg-green-100 text-green-700" 
-                  : driver.status === "inactive" 
-                  ? "bg-red-100 text-red-700" 
-                  : "bg-yellow-100 text-yellow-700";
-
-                return (
-                  <div key={driver.id} className="table-row" style={{ gridTemplateColumns: "2fr 1.5fr 1fr 1fr 1fr 1fr 1fr 150px" }}>
-                    <div>
-                      <div className="font-semibold">{driver.first_name} {driver.last_name}</div>
-                      <div className="text-sm text-gray-500">רישיון: {driver.license_number}</div>
-                    </div>
-                    <div>{driver.phone}</div>
-                    <div className="font-semibold">{stats.totalTrips}</div>
-                    <div className="font-semibold text-green-600">{stats.completedTrips}</div>
-                    <div className="font-semibold">{formatCurrency(stats.totalEarnings)}</div>
-                    <div className="flex items-center gap-1">
-                      <span className="font-semibold">{stats.avgRating}</span>
-                      <span className="text-yellow-500">⭐</span>
-                    </div>
-                    <div>
-                      <Badge className={`${statusStyle} border`}>
-                        {driver.status === "active" ? "פעיל" : driver.status === "inactive" ? "לא פעיל" : "מושעה"}
-                      </Badge>
-                    </div>
-                    <div className="col-actions">
-                      <button className="btn-icon-action" title="פרטים מלאים">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                          <circle cx="12" cy="12" r="3"/>
-                        </svg>
-                      </button>
-                      <button className="btn-icon-action" title="ייצוא נתוני נהג">
-                        <Download size={14} />
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
-              
-              {getFilteredDrivers().length === 0 && (
-                <div className="empty-state">
-                  <div className="empty-state-icon">📊</div>
-                  <div className="empty-state-title">אין נתונים להציג</div>
-                  <div className="empty-state-description">בחר נהג או שנה את הפילטרים</div>
-                </div>
-              )}
+              <Checkbox
+                checked={selectAll}
+                onCheckedChange={handleSelectAll}
+              />
             </div>
+            <div>מספר סידורי</div>
+            <div className="flex items-center gap-1 cursor-pointer">
+              שם הנהג 
+              <ArrowUpDown size={14} />
+            </div>
+            <div>קבועים</div>
+            <div>משתנים חובה</div>
+            <div>משתנים זכות</div>
+            <div>יתרה קודמת</div>
+            <div>כמות נסיעות</div>
+            <div>סה"כ</div>
+            <div></div>
+          </div>
+          
+          <div className="table-body">
+            {filteredReports.length === 0 ? (
+              <div className="text-center py-12 text-gray-500">
+                אין דוחות להצגה
+              </div>
+            ) : (
+              filteredReports.map((report) => (
+                <div 
+                  key={report.id}
+                  className={`table-row ${selectedReports.has(report.id) ? 'row-highlighted' : ''}`}
+                >
+                  <div>
+                    <Checkbox
+                      checked={selectedReports.has(report.id)}
+                      onCheckedChange={(checked) => handleSelectReport(report.id, checked)}
+                    />
+                  </div>
+                  <div className="font-medium">{report.serial_number}</div>
+                  <div className="font-semibold text-gray-900">{report.driver_name}</div>
+                  <div>{formatCurrency(report.fixed_amount)}</div>
+                  <div>{formatCurrency(report.mandatory_variables)}</div>
+                  <div>{formatCurrency(report.optional_variables)}</div>
+                  <div>{formatCurrency(report.previous_balance)}</div>
+                  <div>{report.trip_count}</div>
+                  <div className="font-semibold">{formatCurrency(report.total_amount)}</div>
+                  <div className="col-actions">
+                    <button onClick={() => handleViewDriver(report)} className="btn-icon-action" title="צפה">
+                      <Eye size={16} />
+                    </button>
+                    <button onClick={() => handleExportDriver(report)} className="btn-icon-action" title="ייצוא">
+                      <Download size={16} />
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
 
-        {/* Summary Statistics */}
-        {selectedDriver !== "all" && getFilteredDrivers().length === 1 && (
-          <div className="mt-8">
-            <h3 className="text-lg font-semibold mb-4">סיכום נתונים</h3>
-            <div className="stats-grid">
-              {(() => {
-                const driver = getFilteredDrivers()[0];
-                const stats = getDriverStats(driver.id);
-                return (
-                  <>
-                    <div className="stats-card">
-                      <div className="stats-value">{stats.totalTrips}</div>
-                      <div className="stats-label">סה"כ נסיעות</div>
-                    </div>
-                    <div className="stats-card">
-                      <div className="stats-value">{stats.completedTrips}</div>
-                      <div className="stats-label">נסיעות שהושלמו</div>
-                    </div>
-                    <div className="stats-card">
-                      <div className="stats-value">{formatCurrency(stats.totalEarnings)}</div>
-                      <div className="stats-label">סה"כ הכנסות</div>
-                    </div>
-                    <div className="stats-card">
-                      <div className="stats-value">{stats.avgRating} ⭐</div>
-                      <div className="stats-label">דירוג ממוצע</div>
-                    </div>
-                  </>
-                );
-              })()}
-            </div>
-          </div>
-        )}
+        <div className="report-actions-footer">
+          <button className="btn-action">
+            <Send size={16} />
+            שליחת דוחות
+          </button>
+          <button className="btn-action">
+            <Printer size={16} />
+            הדפסה
+          </button>
+          <button className="btn-action">
+            <Download size={16} />
+            PDF
+          </button>
+          <button className="btn-action">
+            <FileSpreadsheet size={16} />
+            אקסל
+          </button>
+        </div>
       </section>
     </div>
   );
