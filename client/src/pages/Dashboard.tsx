@@ -1,197 +1,234 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Plus, Filter } from "lucide-react";
-import TopActionsBar from "@/components/common/TopActionsBar";
-import StatsCard from "@/components/dashboard/StatsCard";
-import TenderTable from "@/components/tenders/TenderTable";
-import TenderTabs from "@/components/tenders/TenderTabs";
-import TenderToolbar from "@/components/tenders/TenderToolbar";
-import SearchInput from "@/components/common/SearchInput";
-import ConfirmationModal from "@/components/common/ConfirmationModal";
-import NewTenderModal from "@/components/modals/NewTenderModal";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import type { Tender } from "@shared/schema";
+import { Plus, Users, MessageSquare, Package, Car } from "lucide-react";
+import { format } from "date-fns";
+import { he } from "date-fns/locale";
+
+import StatsCard from "@/components/dashboard/StatsCard";
+import TripItem from "@/components/dashboard/TripItem";
+import TopActionsBar from "@/components/common/TopActionsBar";
+import ConfirmationModal from "@/components/common/ConfirmationModal";
+import type { Trip } from "@shared/schema";
 
 export default function Dashboard() {
-  const [activeTab, setActiveTab] = useState("all");
-  const [isNewTenderModalOpen, setIsNewTenderModalOpen] = useState(false);
-  const [confirmModal, setConfirmModal] = useState<{
-    isOpen: boolean;
-    title: string;
-    message: string;
-    onConfirm: () => void;
-  }>({
+  const [trips, setTrips] = useState<Trip[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('active'); // Add active tab state
+  const [confirmationModal, setConfirmationModal] = useState({
     isOpen: false,
-    title: "",
-    message: "",
-    onConfirm: () => {},
+    trip: null as Trip | null
   });
 
-  // Fetch statistics
-  const { data: stats, isLoading: statsLoading, refetch: refetchStats } = useQuery({
-    queryKey: ["/api/stats"],
+  // Fetch trips
+  const { data: fetchedTrips = [], refetch: refetchTrips } = useQuery<Trip[]>({
+    queryKey: ["/api/trips"],
   });
 
-  // Fetch tenders
-  const { data: tenders = [], isLoading: tendersLoading, refetch: refetchTenders } = useQuery<Tender[]>({
-    queryKey: ["/api/tenders"],
-  });
+  useEffect(() => {
+    loadTrips();
+  }, [fetchedTrips]);
 
-  const handleRefresh = () => {
-    refetchStats();
-    refetchTenders();
-  };
-
-  const handleTenderCreated = () => {
-    handleRefresh();
-  };
-
-  const handleDeleteTender = (tender: Tender) => {
-    setConfirmModal({
-      isOpen: true,
-      title: "מחיקת מכרז",
-      message: `האם אתה בטוח שברצונך למחוק את מכרז #${tender.tender_number}?`,
-      onConfirm: () => {
-        // TODO: Implement delete functionality
-        console.log("Deleting tender:", tender.id);
-        setConfirmModal(prev => ({ ...prev, isOpen: false }));
-      },
-    });
-  };
-
-  const handleEditTender = (tender: Tender) => {
-    console.log("Editing tender:", tender.id);
-    // TODO: Implement edit functionality
-  };
-
-  const handleStopTender = (tender: Tender) => {
-    console.log("Stopping tender:", tender.id);
-    // TODO: Implement stop functionality
-  };
-
-  const handleSearch = (query: string) => {
-    console.log("Searching:", query);
-    // TODO: Implement search functionality
-  };
-
-  const getFilteredTenders = () => {
-    switch (activeTab) {
-      case "active":
-        return tenders.filter(t => t.status === "active");
-      case "completed":
-        return tenders.filter(t => t.status === "completed");
-      case "waiting":
-        return tenders.filter(t => t.status === "waiting");
-      default:
-        return tenders;
+  const loadTrips = async () => {
+    try {
+      setTrips(fetchedTrips);
+    } catch (error) {
+      console.error("Error loading trips:", error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const tabCounts = {
-    all: tenders.length,
-    active: tenders.filter(t => t.status === "active").length,
-    completed: tenders.filter(t => t.status === "completed").length,
+  const activeTrips = trips.filter(trip => trip.status === "active");
+  const waitingTrips = trips.filter(trip => trip.status === "waiting");
+  const completedTrips = trips.filter(trip => trip.status === "completed");
+
+  // Get displayed trips based on active tab
+  const getDisplayedTrips = () => {
+    switch(activeTab) {
+      case 'active':
+        return activeTrips;
+      case 'waiting':
+        return waitingTrips;
+      case 'completed':
+        return completedTrips;
+      default:
+        return activeTrips;
+    }
   };
 
-  if (statsLoading || tendersLoading) {
+  // Get section title based on active tab
+  const getSectionTitle = () => {
+    switch(activeTab) {
+      case 'active':
+        return `נסיעות פעילות (${activeTrips.length})`;
+      case 'waiting':
+        return `נסיעות ממתינות (${waitingTrips.length})`;
+      case 'completed':
+        return `נסיעות שהסתיימו (${completedTrips.length})`;
+      default:
+        return `נסיעות פעילות (${activeTrips.length})`;
+    }
+  };
+
+  // Get empty state message based on active tab
+  const getEmptyMessage = () => {
+    switch(activeTab) {
+      case 'active':
+        return "אין נסיעות פעילות כרגע";
+      case 'waiting':
+        return "אין נסיעות ממתינות כרגע";
+      case 'completed':
+        return "אין נסיעות שהסתיימו כרגע";
+      default:
+        return "אין נסיעות כרגע";
+    }
+  };
+
+  const handleStopTrip = (trip: Trip) => {
+    setConfirmationModal({
+      isOpen: true,
+      trip: trip
+    });
+  };
+
+  const confirmStopTrip = async () => {
+    if (!confirmationModal.trip) return;
+    
+    try {
+      // Update trip status to completed
+      const response = await fetch(`/api/trips/${confirmationModal.trip.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          status: "completed"
+        }),
+      });
+      
+      if (response.ok) {
+        refetchTrips();
+      }
+      setConfirmationModal({ isOpen: false, trip: null });
+    } catch (error) {
+      console.error("Error stopping trip:", error);
+    }
+  };
+
+  const handleDeleteTrip = async (trip: Trip) => {
+    if (window.confirm("האם אתה בטוח שברצונך למחוק את הנסיעה?")) {
+      try {
+        const response = await fetch(`/api/trips/${trip.id}`, {
+          method: 'DELETE',
+        });
+        
+        if (response.ok) {
+          refetchTrips();
+        }
+      } catch (error) {
+        console.error("Error deleting trip:", error);
+      }
+    }
+  };
+
+  const handleRefresh = () => {
+    refetchTrips();
+  };
+
+  if (isLoading) {
     return (
-      <div className="page-container">
-        <TopActionsBar onRefresh={handleRefresh} />
-        <div className="loading-spinner">
-          <div className="spinner"></div>
+      <div className="p-8 bg-gray-50 min-h-screen">
+        <div className="animate-pulse">
+          <div className="h-8 bg-gray-200 rounded w-64 mb-8"></div>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-5 mb-10">
+            {[1,2,3,4].map(i => (
+              <div key={i} className="h-32 bg-gray-200 rounded-xl"></div>
+            ))}
+          </div>
         </div>
       </div>
     );
   }
 
+  const displayedTrips = getDisplayedTrips();
+
   return (
-    <div className="page-container">
+    <div className="p-8 bg-gray-50 min-h-screen">
       <TopActionsBar onRefresh={handleRefresh} />
-      
-      {/* Statistics Cards */}
-      <div className="stats-grid">
-        <StatsCard
-          title="מכרזים פעילים"
-          value={tabCounts.active}
-          isActive={true}
-        />
-        <StatsCard
-          title="ממתינים לאישור"
-          value={tenders.filter(t => t.status === "waiting").length}
-        />
-        <StatsCard
-          title="הושלמו השבוע"
-          value={tabCounts.completed}
-        />
-        <StatsCard
-          title="סטטיסטיקות נוספות"
-          isPlaceholder={true}
-        />
-      </div>
 
-      {/* Tenders Section */}
-      <section>
-        <div className="toolbar-container">
-          <TenderTabs 
-            activeTab={activeTab}
-            onTabChange={setActiveTab}
-            counts={tabCounts}
+      <section className="stats-section mb-10">
+        <h2 className="text-xl font-semibold mb-5 text-gray-700">
+          דוח כללי - {format(new Date(), "d.M.yyyy", { locale: he })}
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
+          <StatsCard 
+            title="סכום כסף?"
+            isPlaceholder={true}
           />
-
-          {/* Toolbar */}
-          <div className="flex items-center gap-4">
-            <Button 
-              className="btn-primary-fleet"
-              onClick={() => setIsNewTenderModalOpen(true)}
-            >
-              <Plus size={16} />
-              מכרז חדש
-            </Button>
-
-            <TenderToolbar 
-              onSearch={handleSearch}
-              onFilter={(filters) => console.log('Filter:', filters)}
+          <button 
+            onClick={() => setActiveTab('completed')}
+            className="w-full"
+          >
+            <StatsCard 
+              title="נסיעות שהסתיימו"
+              value={completedTrips.length}
+              isActive={activeTab === 'completed'}
             />
-          </div>
-        </div>
-
-        {/* Tenders Table */}
-        <div className="content-card">
-          <TenderTable
-            tenders={getFilteredTenders()}
-            onEdit={handleEditTender}
-            onDelete={handleDeleteTender}
-            onStop={handleStopTender}
-          />
+          </button>
+          <button 
+            onClick={() => setActiveTab('waiting')}
+            className="w-full"
+          >
+            <StatsCard 
+              title="נסיעות ממתינות"
+              value={waitingTrips.length}
+              isActive={activeTab === 'waiting'}
+            />
+          </button>
+          <button 
+            onClick={() => setActiveTab('active')}
+            className="w-full"
+          >
+            <StatsCard 
+              title="נסיעות פעילות"
+              value={activeTrips.length}
+              isActive={activeTab === 'active'}
+            />
+          </button>
         </div>
       </section>
 
-      {/* New Tender Modal */}
-      <Dialog open={isNewTenderModalOpen} onOpenChange={setIsNewTenderModalOpen}>
-        <DialogContent className="max-w-[500px] p-0" dir="rtl">
-          <DialogHeader className="p-4 border-b text-right bg-white">
-            <DialogTitle>
-              <span className="text-gray-400 text-sm font-normal">12523 | </span>
-              <span className="font-medium">מכרז חדש</span>
-            </DialogTitle>
-          </DialogHeader>
-          <div className="bg-gray-100">
-            <NewTenderModal setOpen={setIsNewTenderModalOpen} onTenderCreated={handleTenderCreated} />
-          </div>
-        </DialogContent>
-      </Dialog>
+      <section className="trips-list-section">
+        <h2 className="text-xl font-semibold mb-5 text-gray-700">{getSectionTitle()}</h2>
+        <div className="space-y-3">
+          {displayedTrips.length === 0 ? (
+            <div className="bg-white p-8 rounded-xl border border-gray-200 text-center">
+              <Car className="mx-auto mb-4 text-gray-400" size={48} />
+              <p className="text-gray-500 text-lg">{getEmptyMessage()}</p>
+              <p className="text-gray-400 text-sm mt-2">נסיעות חדשות יוצגו כאן</p>
+            </div>
+          ) : (
+            displayedTrips.map((trip) => (
+              <TripItem
+                key={trip.id}
+                trip={trip}
+                onStop={handleStopTrip}
+                onDelete={handleDeleteTrip}
+              />
+            ))
+          )}
+        </div>
+      </section>
 
-      {/* Confirmation Modal */}
       <ConfirmationModal
-        isOpen={confirmModal.isOpen}
-        onClose={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
-        onConfirm={confirmModal.onConfirm}
-        title={confirmModal.title}
-        message={confirmModal.message}
-        confirmText="מחק"
+        isOpen={confirmationModal.isOpen}
+        onClose={() => setConfirmationModal({ isOpen: false, trip: null })}
+        onConfirm={confirmStopTrip}
+        title="עצירת נסיעה"
+        message={`האם אתה בטוח שברצונך לעצור את הנסיעה "${confirmationModal.trip?.origin} - ${confirmationModal.trip?.destination}"?`}
+        confirmText="עצור נסיעה"
         cancelText="ביטול"
-        type="danger"
       />
     </div>
   );
